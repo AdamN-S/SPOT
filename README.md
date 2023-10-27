@@ -1,7 +1,7 @@
 # SPOT (Shape, appearance, motion Phenotype Observation Tool)
 
 <p align="center">
-  <img src="https://github.com/fyz11/SPOT/blob/main/docs/pictures/main_workflow.png" width=100%/>
+  <img src="https://github.com/fyz11/SPOT/blob/main/docs/pictures/main_workflow.jpg" width=100%/>
 </p>
 
 ## Introduction
