@@ -29,7 +29,11 @@ def spectral_unmix_RGB(img, n_components=3, alpha=1., l1_ratio=0.5):
     img_vector = img.reshape(-1,img.shape[-1]) / 255.
 #    img_vector = img_vector_.copy()itakura-saito
 #    img_vector[img_vector<0] = 0
-    color_model = NMF(n_components=n_components, init='nndsvd', random_state=0, alpha=alpha, l1_ratio=l1_ratio) # Note ! we need a high alpha ->. 
+
+    try:
+        color_model = NMF(n_components=n_components, init='nndsvd', random_state=0, alpha=alpha, l1_ratio=l1_ratio) # Note ! we need a high alpha ->. 
+    except:
+        color_model = NMF(n_components=n_components, init='nndsvd', random_state=0, alpha_W=alpha, l1_ratio=l1_ratio)
     W = color_model.fit_transform(img_vector)
     
     img_vector_NMF_rgb = W.reshape((img.shape[0], img.shape[1], -1))
@@ -104,20 +108,19 @@ def spectral_unmix_RGB_video(vid, alpha=1, l1_ratio=.5):
     # mean_curve = np.nanmedian(vid_channels_time, axis=1)
     mean_curve = np.nanmin(vid_channels_time, axis=1);  # should we smooth this? 
     ref_time = np.argmax(mean_curve)
- 
-    try:
-        unmix_img, unmix_model = spectral_unmix_RGB(vid[ref_time], 
-                                                    n_components=n_channels, 
-                                                    alpha=alpha, 
-                                                    l1_ratio=l1_ratio)
-        mix_components = unmix_model.components_.copy()
-        
-        mix_components_origin = np.argmax(mix_components, axis =1 )
-        mix_components_origin_mag = np.max(mix_components, axis =1)
-        
-        mix_components_origin = mix_components_origin[mix_components_origin_mag>0]
-        
     
+    unmix_img, unmix_model = spectral_unmix_RGB(vid[ref_time], 
+                                                n_components=n_channels, 
+                                                alpha=alpha, 
+                                                l1_ratio=l1_ratio)
+    mix_components = unmix_model.components_.copy()
+    
+    mix_components_origin = np.argmax(mix_components, axis =1 )
+    mix_components_origin_mag = np.max(mix_components, axis =1)
+    
+    mix_components_origin = mix_components_origin[mix_components_origin_mag>0]
+    
+    try:
         # use the select channels to properly select the ones. 
         NMF_channel_order = []
         NMF_select_channels = []
