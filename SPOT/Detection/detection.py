@@ -324,6 +324,7 @@ def write_bbox_files(filename, detections):
 def load_and_run_YOLOv3_weights_keras_detection_model_RGB(vid, 
                                                           weightsfile,
                                                           outfolder,  
+                                                          equalize_hist=False,
                                                           obj_thresh=0.001, 
                                                           nms_thresh = 0.45,
                                                           imsize=(512,512),  
@@ -340,6 +341,8 @@ def load_and_run_YOLOv3_weights_keras_detection_model_RGB(vid,
         filepath to the pretrained YOLOv3 weights saved in keras .h5 format. 
     outfolder : str
         folderpath to save the bounding box predictions. subfolders will be created in this folder for each of the channels and for each channel there will be an individual .txt file containing the bounding boxes at each timepoint
+    equalize_hist : bool
+        if True, apply global histogram equalization to each frame of the video. 
     obj_thresh : float [0-1], optional
         the score threshold for a positive bounding box detection. The default is 0.001.
     nms_thresh : float [0-1], optional
@@ -358,7 +361,7 @@ def load_and_run_YOLOv3_weights_keras_detection_model_RGB(vid,
     None.
 
     """
-    from keras.models import load_model 
+    from tensorflow.keras.models import load_model 
     import skimage.transform as sktform 
     import numpy as np 
     import skimage.exposure as skexposure 
@@ -389,7 +392,8 @@ def load_and_run_YOLOv3_weights_keras_detection_model_RGB(vid,
         # iterate over channel. 
         # imglist = []
         # vid_ch = equalize_hist(vid[...,channel].ravel()).reshape(vid[...,channel].shape) # 0-1
-        vid_ch = vid[...,channel].copy()
+        # vid_ch = vid[...,channel].copy()
+        vid_ch = (vid[...,channel]*1.).copy() # ensure this is float. 
         # image_h, image_w = vid_ch.shape[1:]
         
         # iterate over frames. 
@@ -398,8 +402,13 @@ def load_and_run_YOLOv3_weights_keras_detection_model_RGB(vid,
 #                frame_img = vid[i,...,channel].copy()
             frame_img = vid_ch[i].copy()
             frame_img = sktform.resize(frame_img, output_shape=imsize, order=1, preserve_range=True)
-            frame_img = skexposure.equalize_hist(frame_img) # equalize hist 
+            frame_img_viz = frame_img.copy()
+            frame_img_viz = np.uint8(255*skexposure.rescale_intensity(frame_img_viz*1.))
+            frame_img_viz = np.dstack([frame_img_viz, frame_img_viz, frame_img_viz])
+            if equalize_hist:
+                frame_img = skexposure.equalize_hist(frame_img) # equalize hist 
             frame_img = np.dstack([frame_img,frame_img,frame_img]) # make RGB.
+
 #            frame_img = np.uint8(255*rgb2gray(vid[i]))
             # frame_img = np.uint8(rescale_intensity(frame_img)) # this seems to work better? 
             # frame_img = np.uint8(255*frame_img)
@@ -412,6 +421,7 @@ def load_and_run_YOLOv3_weights_keras_detection_model_RGB(vid,
             # imsave(frame_file, frame_img)
             # imglist.append(frame_file)
             # frame_img_ = preprocess_input(frame_img, net_h, net_w)
+            # print('max intensity in, ', np.max(frame_img))
             yolos = yolo_model.predict((frame_img/255.)[None,...]) # outputs 3 heads... for the 3 feature maps...  # this needs to be converted to bbox. ! 
             # yolos = yolo_model.predict(frame_img_)
             boxes = []
@@ -427,8 +437,9 @@ def load_and_run_YOLOv3_weights_keras_detection_model_RGB(vid,
             _do_nms(boxes, nms_thresh)     
             
             detect_bboxes = _get_bboxes(boxes, class_labels, obj_thresh=obj_thresh)
-            bbox_img = _draw_bbox(frame_img, detect_bboxes, class_labels, cmap) # draw the 
-            
+            # print(np.max(frame_img_viz))
+            bbox_img = _draw_bbox(frame_img_viz, detect_bboxes, class_labels, cmap) # draw the 
+            # print(np.max(bbox_img))
             # # draw bounding boxes on the image using labels
             # draw_boxes(frame_img, boxes, class_labels, obj_thresh=0.01)  # ok we get bounding boxes out..... though this will be slightly different ... o boy ... 
             if debug_viz:
