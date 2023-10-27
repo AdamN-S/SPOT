@@ -1,4 +1,4 @@
-# SAM (Shape, Appearance, Motion) Features
+# SPOT (Shape, appearance, motion Phenotype Observation Tool)
 
 <p align="center">
   <img src="https://github.com/fyz11/SAM_Features/blob/main/docs/pictures/SAM.jpg" width=100%/>
