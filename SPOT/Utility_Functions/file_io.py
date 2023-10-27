@@ -235,8 +235,9 @@ def fetch_channel_boxes(imgfile, boxfolder, ch_no, ending='.avi'):
     import os 
     import glob 
     basename = os.path.split(imgfile)[-1].split(ending)[0]
-#    print(basename)
+    # print(basename)
     bboxfolder = os.path.join(boxfolder, basename, 'Channel-%s' %(str(ch_no+1).zfill(2)))
+    # print(bboxfolder)
     boxfiles = glob.glob(os.path.join(bboxfolder, '*.txt'))
 
     return np.sort(boxfiles)
@@ -269,6 +270,35 @@ def read_bbox_from_file(bboxfile):
         bboxes = np.array(bboxes)
         
     return bboxes
+
+
+def read_detected_bboxes_from_file_for_tracking(bboxfiles):
+    """ reads a list of bounding box files detected by our pretrained YOLOv3 algorithm, returning as a list of bounding box numpy arrays sorted by time
+    
+    Parameters
+    ----------
+    bboxfiles : list of filepaths
+        list of bounding box files, each for a single image written in YOLO format as (label, score, x, y, w, h)
+    
+    Returns
+    -------
+    boxes : list of [frame_no, box]
+        frame_no from which the box was predicted from and each box is a (n_boxes, 5) array with box in YOLO format as (label, score, x, y, w, h)
+    
+    """
+    import os 
+    
+    boxes = []
+    
+    for f in bboxfiles:    
+        box = read_bbox_from_file(f)
+#        frame_no = int(((f.split('/')[-1]).split('_')[-1]).split('.txt')[0])
+        frame_no = int(os.path.split(f)[-1].split('_')[2])
+        boxes.append([frame_no, box])
+        
+    boxes = sorted(boxes, key=lambda x: x[0])
+        
+    return boxes
 
 
 def write_pickle(savefile, a):
