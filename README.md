@@ -10,7 +10,7 @@ SPOT is a generalized and streamlined workflow for analysing object dynamics in 
 
 SPOT is provided here as a Python package to allow full flexibility. To get started, please check out exemplar scripts in the examples/ folder. We also include SPOTapp, a graphical user interface (GUI) to run SPOT stages 1 and 2. This app is provided as is in alpha development. It will be separately developed and maintained at the following address: XXXX.   
 
-
+## Associated Paper
 SPOT is associated with the following paper, which you can read for more technical detail and get an idea of the applications SPOT enables: 
 
 **Measuring and monitoring complex dynamic phenotypic heterogeneity in live-cell imaging using Shape, Appearance and Motion Phenotype Observation Tool (SPOT)**, 2023, written by Felix Y. Zhou, Brittany-Amber Jacobs, Xiaoyue Han, Adam Norton-Steele, Thomas M. Carroll, Carlos Ruiz Puig, Joseph Chadwick, Xiao Qin, Richard Lisle, Lewis Marsh, Helen M. Byrne, Heather A. Harrington, Linna Zhou and Xin Lu.
@@ -18,10 +18,19 @@ SPOT is associated with the following paper, which you can read for more technic
 ## Getting Started
 Exemplar scripts to run every step of the workflow are provided in the Examples folder which uses the example data located in the data/ folder. This includes:
 
-1. First item
-2. Second item
-3. Third item
-4. Fourth item
+for SPOT Stage 1: video acquisition and object segmentation:
+1. SPOT_Stage1_Step0_unmix-RGB-confocal_video.py
+2. SPOT_Stage1_Step1_detect_bbox-RGB-confocal_video.py
+3. SPOT_Stage1_Step2_track_detect_bbox-RGB-confocal_video.py
+4. SPOT_Stage1_Step3_segment_tracked_bbox-RGB-confocal_video.py
+5. SPOT_Stage1_Step4_postprocess_segment_tracked_bbox-RGB-confocal_video.py
+
+for SPOT Stage 2: computation of SAM (Shape, Appearance and Motion) phenome:
+
+
+for SPOT Stage 3: analysis of SAM (Shape, Appearance and Motion) phenome:
+1. SPOT_Stage3_Example-cell_tracking_challenge_dataset.py
+
 
 ## Pretrained Neural Network Models for organoid detection and segmentation
 
