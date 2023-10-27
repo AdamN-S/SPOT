@@ -12,6 +12,7 @@ SPOT is provided here as a Python package to allow full flexibility. To get star
 
 
 SPOT is associated with the following paper, which you can read for more technical detail and get an idea of the applications SPOT enables: 
+
 **Measuring and monitoring complex dynamic phenotypic heterogeneity in live-cell imaging using Shape, Appearance and Motion Phenotype Observation Tool (SPOT)**, 2023, written by Felix Y. Zhou, Brittany-Amber Jacobs, Xiaoyue Han, Adam Norton-Steele, Thomas M. Carroll, Carlos Ruiz Puig, Joseph Chadwick, Xiao Qin, Richard Lisle, Lewis Marsh, Helen M. Byrne, Heather A. Harrington, Linna Zhou and Xin Lu.
 
 
