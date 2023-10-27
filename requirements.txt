@@ -1,0 +1,12 @@
+pillow
+numpy
+scipy
+scikit-learn
+scikit-image==0.17.2
+opencv-contrib-python
+matplotlib
+tqdm
+tifffile
+seaborn
+tensorflow-gpu==1.14.0
+keras==2.2.5
