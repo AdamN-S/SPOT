@@ -15,6 +15,14 @@ SPOT is associated with the following paper, which you can read for more technic
 
 **Measuring and monitoring complex dynamic phenotypic heterogeneity in live-cell imaging using Shape, Appearance and Motion Phenotype Observation Tool (SPOT)**, 2023, written by Felix Y. Zhou, Brittany-Amber Jacobs, Xiaoyue Han, Adam Norton-Steele, Thomas M. Carroll, Carlos Ruiz Puig, Joseph Chadwick, Xiao Qin, Richard Lisle, Lewis Marsh, Helen M. Byrne, Heather A. Harrington, Linna Zhou and Xin Lu.
 
+## Getting Started
+Exemplar scripts to run every step of the workflow are provided in the Examples folder which uses the example data located in the data/ folder. This includes:
+1.
+2.
+3.
+
+## Pretrained Neural Network Models for organoid detection and segmentation
+
 
 ## Documentation
 Documented API of the functions provided in this library is available as a html in the docs/build/hmtl folder. You can build up-to-date docs by going into docs/ and executing:
