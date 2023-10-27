@@ -17,9 +17,11 @@ SPOT is associated with the following paper, which you can read for more technic
 
 ## Getting Started
 Exemplar scripts to run every step of the workflow are provided in the Examples folder which uses the example data located in the data/ folder. This includes:
-1.
-2.
-3.
+
+1. First item
+2. Second item
+3. Third item
+4. Fourth item
 
 ## Pretrained Neural Network Models for organoid detection and segmentation
 
