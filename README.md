@@ -1,8 +1,19 @@
 # SPOT (Shape, appearance, motion Phenotype Observation Tool)
 
 <p align="center">
-  <img src="https://github.com/fyz11/SAM_Features/blob/main/docs/pictures/SAM.jpg" width=100%/>
+  <img src="https://github.com/fyz11/SPOT/blob/main/docs/pictures/main_workflow.png" width=100%/>
 </p>
+
+## Introduction
+SPOT is a generalized and streamlined workflow for analysing object dynamics in movies. It is designed to suit high-content imaging applications where analytical tools should be push-and-go and require no prior knowledge of the expected behaviour of the objects to be studied. In other words, users should be able to run through all the steps in one go, then retrospectively interpret the produced results. This workflow is inspired by that for single-cell sequencing and is summarized in the figure above.  
+
+SPOT is provided here as a Python package to allow full flexibility. To get started, please check out exemplar scripts in the examples/ folder. We also include SPOTapp, a graphical user interface (GUI) to run SPOT stages 1 and 2. This app is provided as is in alpha development. It will be separately developed and maintained at the following address: .   
+
+SPOT is associated with the following paper, which you can read for more technical detail and get an idea of the applications SPOT enables: **Measuring and monitoring complex dynamic phenotypic heterogeneity in live-cell imaging using Shape, Appearance and Motion Phenotype Observation Tool (SPOT)**, 2023, written by Felix Y. Zhou, Brittany-Amber Jacobs, Xiaoyue Han, Adam Norton-Steele, Thomas M. Carroll, Carlos Ruiz Puig, Joseph Chadwick, Xiao Qin, Richard Lisle, Lewis Marsh, Helen M. Byrne, Heather A. Harrington, Linna Zhou and Xin Lu.
+
+
+## Documentation
+Documented API of the functions provided in this library is available in the docs/ folder.  
 
 
 ## To install
