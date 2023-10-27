@@ -262,33 +262,46 @@ def power_transform_and_scale_features(all_feats, feature_names, all_conditions)
     
     
 def preprocess_feats(X, std_tformer, pow_tformer):
+    r""" Applies already fitted scikit-learn standard scaler and powertransformer objects to the input matrix. The power transform is applied first then standard scale. 
 
+    Parameters
+    ----------
+    X : (n_objects, n_feats) np.array
+        numpy array of all features for all object instances to be transformed 
+    std_tformer : sklearn.preprocessing.StandardScaler object
+    pow_tformer : sklearn.preprocessing.power_transform object
+        
+    Returns
+    -------
+    X_tfm : (n_objects, n_feats) np.array
+        numpy array of all features with transformed features
+    """
     # apply learnt transformations to input features X.
     X_tfm = std_tformer.transform(pow_tformer.transform(X))
 
     return X_tfm 
 
 
-def map_intensity_interp2(query_pts, grid_shape, I_ref, method='spline', cast_uint8=False, s=0):
+# def map_intensity_interp2(query_pts, grid_shape, I_ref, method='spline', cast_uint8=False, s=0):
 
-    import numpy as np 
-    from scipy.interpolate import RectBivariateSpline, RegularGridInterpolator 
+#     import numpy as np 
+#     from scipy.interpolate import RectBivariateSpline, RegularGridInterpolator 
     
-    if method == 'spline':
-        spl = RectBivariateSpline(np.arange(grid_shape[0]), 
-                                  np.arange(grid_shape[1]), 
-                                  I_ref,
-                                  s=s)
-        I_query = spl.ev(query_pts[...,0], 
-                         query_pts[...,1])
-    else:
-        spl = RegularGridInterpolator((np.arange(grid_shape[0]), 
-                                       np.arange(grid_shape[1])), 
-                                       I_ref, method=method, bounds_error=False, fill_value=0)
-        I_query = spl((query_pts[...,0], 
-                       query_pts[...,1]))
+#     if method == 'spline':
+#         spl = RectBivariateSpline(np.arange(grid_shape[0]), 
+#                                   np.arange(grid_shape[1]), 
+#                                   I_ref,
+#                                   s=s)
+#         I_query = spl.ev(query_pts[...,0], 
+#                          query_pts[...,1])
+#     else:
+#         spl = RegularGridInterpolator((np.arange(grid_shape[0]), 
+#                                        np.arange(grid_shape[1])), 
+#                                        I_ref, method=method, bounds_error=False, fill_value=0)
+#         I_query = spl((query_pts[...,0], 
+#                        query_pts[...,1]))
 
-    if cast_uint8:
-        I_query = np.uint8(I_query)
+#     if cast_uint8:
+#         I_query = np.uint8(I_query)
     
-    return I_query
+#     return I_query
