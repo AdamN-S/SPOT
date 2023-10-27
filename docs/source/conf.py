@@ -17,8 +17,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'SAM'
-copyright = '2022, Felix Y. Zhou'
+project = 'SPOT'
+copyright = '2023, Felix Y. Zhou'
 author = 'Felix Y. Zhou'
 
 # The full version, including alpha/beta/rc tags

@@ -1,13 +1,13 @@
-SAM.Features package
-====================
+SPOT.Image package
+==================
 
 Submodules
 ----------
 
-SAM.Features.features module
-----------------------------
+SPOT.Image.image module
+-----------------------
 
-.. automodule:: SAM.Features.features
+.. automodule:: SPOT.Image.image
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ SAM.Features.features module
 Module contents
 ---------------
 
-.. automodule:: SAM.Features
+.. automodule:: SPOT.Image
    :members:
    :undoc-members:
    :show-inheritance:

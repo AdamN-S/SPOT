@@ -548,6 +548,21 @@ def compute_most_representative_image_patches( object_feature_module_expr,
 
 def get_SAM_feature_type(feature_names):
     
+    r""" Given SPOT's SAM phenome's feature names, return whether the feature is classified as shape, appearance or motion and if its scope is global, local-regional or local-distribution 
+    
+    Parameters
+    ----------
+    feature_names : (n_features,) array
+        names of the individual SAM features to get the type of from SPOT's SAM phenome
+    
+    Returns
+    -------
+    feature_SAM_type : (n_features,) array
+        each feature with its type labelled as either 0: shape, 1: appearance, 2: motion 
+    feature_scope : (n_features,) array
+        each feature with its spatial scope labelled as either 0: global, 1: (local) regional, 2: (local) distribution 
+
+    """
     import numpy as np 
     
     # 0-shape, 1-appearance, 2-motion
@@ -633,8 +648,32 @@ def get_SAM_feature_type(feature_names):
 
 
 
-def map_intensity_interp2(query_pts, grid_shape, I_ref, method='spline', cast_uint8=False, s=0):
+def map_intensity_interp2(query_pts, grid_shape, I_ref, method='spline', cast_uint8=False, s=0, fill_value=0):
+    r""" Interpolate a 2D image at specified coordinate points. 
 
+    Parameters
+    ----------
+    query_pts : (n_points,2) array
+        array of (y,x) image coordinates to interpolate intensites at from ``I_ref``
+    grid_shape : (M,N) tuple
+        shape of the image to get intensities from 
+    I_ref : (M,N) array
+        2D image to interpolate intensities from 
+    method : str
+        Interpolating algorithm. Either 'spline' to use scipy.interpolate.RectBivariateSpline or any other e.g. 'linear' from scipy.interpolate.RegularGridInterpolator
+    cast_uint8 : bool
+        Whether to return the result as a uint8 image. 
+    s : scalar
+        if method='spline', s=0 is a interpolating spline else s>0 is a smoothing spline.
+    fill_value : scalar
+        specifies the imputation value if any of query_pts needs to extrapolated. 
+    
+    Returns
+    -------
+    I_query : (n_points,) array
+        the intensities of ``I_ref`` interpolated at the specified ``query_pts`` 
+
+    """
     import numpy as np 
     from scipy.interpolate import RectBivariateSpline, RegularGridInterpolator 
     
@@ -648,7 +687,7 @@ def map_intensity_interp2(query_pts, grid_shape, I_ref, method='spline', cast_ui
     else:
         spl = RegularGridInterpolator((np.arange(grid_shape[0]), 
                                        np.arange(grid_shape[1])), 
-                                       I_ref, method=method, bounds_error=False, fill_value=0)
+                                       I_ref, method=method, bounds_error=False, fill_value=fill_value)
         I_query = spl((query_pts[...,0], 
                        query_pts[...,1]))
 
@@ -1890,16 +1929,39 @@ def construct_obj_traj_from_uniq_obj_ids(all_obj_uniq_row_ids,
 
 
 ### automatic drawing of the hmm graph with edges colored by probability. 
-def draw_HMM_transition_graph(trans_table, ax, node_colors, node_list, 
-                              edgescale=10, edgelabelpos=1., figsize=(10,10), 
+def draw_HMM_transition_graph(trans_table, ax, node_colors=None, 
+                              edgescale=10, edgelabelpos=1., 
+                              figsize=(10,10), 
                               savefile=None):
-    r"""
-    
+    r""" Draw a given Markov transition table as a graph diagram. Nodes are organized as a circle of fixed radius
+
+    Parameters
+    ----------
+    trans_table : pandas.DataFrame or 2D numpy array 
+        Markov transition table where each row sums to 1, giving the probability of transition from row i to column j. 
+    ax : Matplotlib axes object
+        this is the character separator used to separate the meta information in the unique object id.
+    node_colors : list or array
+        the desired color to color each graph node. If None, the default is the Spectral colormap
+    edgescale : int
+        controls the width of the arrows
+    edgelabelpos : float
+        controls the distance away from the center that graph nodes are drawn at. 
+    figsize : 2-tuple
+        size of the matplotlib plot
+    savefile : str
+        if specified, the displayed image will be saved to this path. 
+
+    Returns
+    -------
+    None
+
     """
     from hmmviz import TransGraph
     import numpy as np 
     import pylab as plt 
     import pandas as pd 
+    import seaborn as sns 
     
     # if array first cast to table. 
     if isinstance(trans_table, pd.DataFrame):
@@ -1908,15 +1970,20 @@ def draw_HMM_transition_graph(trans_table, ax, node_colors, node_list,
         transition_table = pd.DataFrame(np.array(trans_table),
                                         index=np.arange(len(trans_table)), 
                                         columns=np.arange(len(trans_table)))
-        
+
+    node_list = np.arange(len(trans_table))
+
     graph = TransGraph(transition_table)
     trans_table_prob = transition_table.values.copy()
         
     fig, ax = plt.subplots(figsize=figsize)
 
     nodelabels = {ii:ii for ii in node_list}
+
+    if node_colors is None:
+        node_colors = sns.color_palette('Spectral', len(node_list)) # create a default. 
+            
     colors = {ii: node_colors[ii] for ii in np.arange(len(node_list))}
-    
     
     # edgecolors = {('sunny','rainy'): 'orange', 
     #            ('sunny','sunny'): 'red',

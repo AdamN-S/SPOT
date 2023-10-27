@@ -1307,7 +1307,7 @@ def compute_boundary_texture_features(vid, boundaries,
                         vid_cnt_im = sktform.resize(vid_cnt, siftshape, preserve_range=True)
                         sift_texture = siftextractor.process_image(vid_cnt_im).ravel()
                         sift_texture = sift_texture / (np.linalg.norm(sift_texture) + 1e-8)
-                        sift_texture_labels = np.hstack(['sift_%s'%(str(iii+1)) for iii in np.arange(len(sift_texture))])
+                        sift_texture_labels = np.hstack(['sift_appear_%s'%(str(iii+1)) for iii in np.arange(len(sift_texture))]) # using sift_appear to distinguish from motion 
 
                         all_feats.append(sift_texture)
                         all_feats_labels.append(sift_texture_labels)
@@ -1713,7 +1713,7 @@ def compute_boundary_motion_features(vid_flow,
                             flow_vid_cnt_im = sktform.resize(flow_vid_cnt_, siftshape, preserve_range=True)
                             sift_texture = siftextractor.process_image(flow_vid_cnt_im).ravel()
                             sift_texture = sift_texture / (np.linalg.norm(sift_texture) + 1e-8)
-                            sift_texture_labels = np.hstack(['sift_%s'%(str(iii+1)) for iii in np.arange(len(sift_texture))])
+                            sift_texture_labels = np.hstack(['sift_motion_%s'%(str(iii+1)) for iii in np.arange(len(sift_texture))])
 
                             all_feats.append(sift_texture)
                             all_feats_labels.append(sift_texture_labels)

@@ -1,7 +1,7 @@
-SAM
-===
+SPOT
+====
 
 .. toctree::
    :maxdepth: 4
 
-   SAM
+   SPOT

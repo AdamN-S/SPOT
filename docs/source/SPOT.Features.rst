@@ -1,13 +1,13 @@
-SAM.Detection package
+SPOT.Features package
 =====================
 
 Submodules
 ----------
 
-SAM.Detection.detection module
-------------------------------
+SPOT.Features.features module
+----------------------------=
 
-.. automodule:: SAM.Detection.detection
+.. automodule:: SPOT.Features.features
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ SAM.Detection.detection module
 Module contents
 ---------------
 
-.. automodule:: SAM.Detection
+.. automodule:: SPOT.Features
    :members:
    :undoc-members:
    :show-inheritance:

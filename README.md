@@ -15,8 +15,10 @@ SPOT is associated with the following paper, which you can read for more technic
 
 
 ## Documentation
-Documented API of the functions provided in this library is available in the docs/ folder.  
-
+Documented API of the functions provided in this library is available as a html in the docs/build/hmtl folder. You can build up-to-date docs by going into docs/ and executing:
+```shell
+make html
+```
 
 ## To install
 The majority of the requirements of the package can be installed using pip:

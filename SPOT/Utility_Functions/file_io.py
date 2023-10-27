@@ -158,7 +158,7 @@ def save_imagej_vid(img, imgname):
 
     """ save a 2D+time grayscale in ImageJ format. Can also do this now through skimage.io.imsave 
 
-    Paramaters
+    Parameters
     ----------
     img : numpy array 
         (n_frames, n_rows, n_cols) image str 
@@ -182,7 +182,7 @@ def save_imagej_vid(img, imgname):
 def read_video_cv2(avifile, to_RGB=True):
     """ read a general movie file using opencv 
 
-    Paramaters
+    Parameters
     ----------
     avifile : str 
         filepath to the input movie file
