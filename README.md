@@ -12,4 +12,4 @@ The software and scripts is made available as is under a Ludwig Software License
 
 #### FOR-PROFIT USERS
 ---
-If you plan to use MOSES in any for-profit application, you are required to obtain a separate  license. To do so, please contact eauffarth@licr.org at the Ludwig Institute for  Cancer Research Ltd.
+If you plan to use SPOT in any for-profit application, you are required to obtain a separate license. To do so, please contact Shayda Hemmati (shemmati@licr.org) or Par Olsson (polsson@licr.org) at the Ludwig Institute for  Cancer Research Ltd.
