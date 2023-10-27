@@ -960,14 +960,17 @@ def segment_organoid_bbox_track(vid,
                 bbox_tra_patches_boxes.append([x1,y1,x2,y2])        
                 
         bbox_tra_patches = np.array(bbox_tra_patches)
-        bbox_tra_patches = bbox_tra_patches.transpose(0,3,1,2) # to be permissible in unet. 
+        # print(bbox_tra_patches.shape)
+        # bbox_tra_patches = bbox_tra_patches.transpose(0,3,1,2) # to be permissible in unet. 
         bbox_tra_patches_raw = np.array(bbox_tra_patches_raw)
         bbox_tra_patches_times = np.hstack(bbox_tra_patches_times)
         bbox_tra_patches_sizes = np.array(bbox_tra_patches_sizes)
         bbox_tra_patches_boxes = np.array(bbox_tra_patches_boxes)
         
         bbox_tra_patches_seg = segment_model.predict(bbox_tra_patches)
-        bbox_tra_patches_seg = bbox_tra_patches_seg[:,0] # flatten the array. 
+
+        # bbox_tra_patches_seg = bbox_tra_patches_seg[:,0] # flatten the array. 
+        bbox_tra_patches_seg = bbox_tra_patches_seg[...,0]
         bbox_tra_patches_seg = np.clip(bbox_tra_patches_seg, 0, 1)
 
 # #        print(bbox_tra_patches_seg.max(), bbox_tra_patches_seg.min())
@@ -989,7 +992,8 @@ def segment_organoid_bbox_track(vid,
         for bb_ii in np.arange(len(bbox_tra_patches)):
             
             # patch_bb_ii = bbox_tra_patches_raw[bb_ii] # just duplicated.. 
-            patch_bb_ii = bbox_tra_patches[bb_ii][0] # just duplicated.. # equalize_hist version 
+            # patch_bb_ii = bbox_tra_patches[bb_ii][0] # just duplicated.. # equalize_hist version 
+            patch_bb_ii = bbox_tra_patches[bb_ii][...,0]
 
             seg_bb_ii = bbox_tra_patches_seg[bb_ii]
             m, n = bbox_tra_patches_sizes[bb_ii]
