@@ -167,13 +167,13 @@ def _load_bbox_frame_voc( img, bbox_obj_frame):
     nrows, ncols = img.shape
     
     frame_No, bboxes = bbox_obj_frame
-    probs = bboxes[:,1].astype(np.float)
+    probs = bboxes[:,1].astype(np.float32)
     boxes = bboxes[:,2:]
 
-    x = boxes[:,0].astype(np.int)
-    y = boxes[:,1].astype(np.int)
-    w = boxes[:,2].astype(np.int)
-    h = boxes[:,3].astype(np.int)
+    x = boxes[:,0].astype(np.int32)
+    y = boxes[:,1].astype(np.int32)
+    w = boxes[:,2].astype(np.int32)
+    h = boxes[:,3].astype(np.int32)
     
     
     x1 = x - w//2 ; x1 = np.clip(x1, 0, ncols-1)
@@ -398,8 +398,8 @@ def remove_very_large_bbox(boxes,
         
         box_density = np.zeros(shape)
         bbox_coverage = np.zeros(len(boxes_))
-        box_centroids_x = np.clip((.5*(boxes_[:,0] + boxes_[:,2])).astype(np.int), 0, shape[1]-1).astype(np.int)
-        box_centroids_y = np.clip((.5*(boxes_[:,1] + boxes_[:,3])).astype(np.int), 0, shape[0]-1).astype(np.int)
+        box_centroids_x = np.clip((.5*(boxes_[:,0] + boxes_[:,2])).astype(np.int32), 0, shape[1]-1).astype(np.int32)
+        box_centroids_y = np.clip((.5*(boxes_[:,1] + boxes_[:,3])).astype(np.int32), 0, shape[0]-1).astype(np.int32)
         
         if mode == 'fast':
             box_centroids = np.vstack([box_centroids_x, box_centroids_y]).T
@@ -764,7 +764,7 @@ def track_organoid_bbox(vid_flow,
     # =============================================================================    
     vid_bbox_tracks_all_lens = np.hstack([len(tra) for tra in vid_bbox_tracks_all])
     vid_bbox_tracks_all_start_time = np.hstack([tra[0][0] for tra in vid_bbox_tracks_all])
-    vid_bbox_tracks_lifetime_ratios = vid_bbox_tracks_all_lens / (len(vid) - vid_bbox_tracks_all_start_time).astype(np.float)
+    vid_bbox_tracks_lifetime_ratios = vid_bbox_tracks_all_lens / (len(vid) - vid_bbox_tracks_all_start_time).astype(np.float32)
     
     # =============================================================================
     #     Turn into a proper array of n_tracks x n_time x 4 or 5.... 
@@ -922,7 +922,7 @@ def segment_organoid_bbox_track(vid,
         
         for bb_frame_tt, bb_frame in enumerate(bbox_tra_ii):
             if ~np.isnan(bb_frame[0]): 
-                bb_frame = bb_frame.astype(np.int) # cast to int for image indexing. 
+                bb_frame = bb_frame.astype(np.int32) # cast to int for image indexing. 
                 x1,y1,x2,y2 = bb_frame.ravel()
             
 #                # not an empty box. 

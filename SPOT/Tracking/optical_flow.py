@@ -44,8 +44,8 @@ def Eval_dense_optic_flow(prev, present, params):
     # Check version of opencv installed, if not 3.0.0 then issue alert.
 #    if '3.0.0' in cv2.__version__ or '3.1.0' in cv2.__version__:
         # Make the image pixels into floats.
-    prev = prev.astype(np.float)
-    present = present.astype(np.float)
+    prev = prev.astype(np.float32)
+    present = present.astype(np.float32)
 
     if cv2.__version__.split('.')[0] == '3' or cv2.__version__.split('.')[0] == '4':
         flow = cv2.calcOpticalFlowFarneback(prev, present, None, params['pyr_scale'], params['levels'], params['winsize'], params['iterations'], params['poly_n'], params['poly_sigma'], params['flags']) 
@@ -109,8 +109,8 @@ def extract_vid_optflow(vid, flow_params, rescale_intensity=False):
     for frame in tqdm(np.arange(len(vid)-1)):
         # frame0 = equalize_hist(rescale_intensity(vid_resize[frame]))*255.
         # frame1 = equalize_hist(rescale_intensity(vid_resize[frame+1]))*255.
-        frame0 = vid_ch[frame].copy()
-        frame1 = vid_ch[frame+1].copy()
+        frame0 = vid[frame].copy()
+        frame1 = vid[frame+1].copy()
 
         if rescale_intensity:
             frame0 = skexposure.rescale_intensity(frame0) # pretty much the same. so we don't bother. 

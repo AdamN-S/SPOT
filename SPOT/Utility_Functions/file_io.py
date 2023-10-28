@@ -385,13 +385,13 @@ def load_bbox_frame_voc( img, bbox_obj_frame):
     nrows, ncols = img.shape[:2]
     
     frame_No, bboxes = bbox_obj_frame
-    probs = bboxes[:,1].astype(np.float)
+    probs = bboxes[:,1].astype(np.float32)
     boxes = bboxes[:,2:]
 
-    x = boxes[:,0].astype(np.int)
-    y = boxes[:,1].astype(np.int)
-    w = boxes[:,2].astype(np.int)
-    h = boxes[:,3].astype(np.int)
+    x = boxes[:,0].astype(np.int32)
+    y = boxes[:,1].astype(np.int32)
+    w = boxes[:,2].astype(np.int32)
+    h = boxes[:,3].astype(np.int32)
     
     
     x1 = x - w//2 ; x1 = np.clip(x1, 0, ncols-1)
@@ -403,6 +403,404 @@ def load_bbox_frame_voc( img, bbox_obj_frame):
     boxes_voc = np.hstack([x1[:,None],y1[:,None],x2[:,None],y2[:,None]])
         
     return probs, boxes_voc
+
+
+
+def compile_boundaries_arrays(expt, 
+                              org_expt_table, 
+                              boundaries, 
+                              channels_sep=',', 
+                               patients_sep='+', 
+                               conditions_sep='+', 
+                              genetics_sep='+'):
+    
+    r""" For the extracted object boundaries of a given video and the global metadata for the dataset this video was part of, this function uses the global metadata to annotate the object boundaries.
+    
+    Parameters
+    ----------
+    expt : str
+        filename of the video. This should match with that specified in the global metadata as this acts like the key to pull out the correct information row. 
+    org_expt_table : pd.DataFrame
+        Pandas dataframe of the global metadata of the generated standard template for all the videos of a dataset
+    boundaries : array
+        a list of object boundaries, (n_objects, n_timepoints) for each image channel
+    channels_sep : str
+        videos may be multichannel. the Img_Channels column of the metadata table specifies objects from which channel is considered for analysis. More than one specified channel should be indicated with a delimiter e.g. 1,2 for first, second image channel respectively
+    patients_sep : str
+        videos may have objects from different patients/sources for multichannels. the Patients column of the metadata table is used to specify the source for each video channel and this should be indicated with a delimiter. the delimiter defaults to '+'
+    conditions_sep : str
+        videos may have objects subject to different treatments for multichannels. the Conditions column of the metadata table is used to specify the treatment condition for each video channel and this should be indicated with a delimiter. the delimiter defaults to '+'
+    genetics_sep : str
+        videos may have objects of different genotype for multichannels. the Genetics column of the metadata table is used to specify the genotype for each video channel and this should be indicated with a delimiter. the delimiter defaults to '+'
+   
+    
+    Returns
+    -------
+    (filenames_all, conditions_all, genetics_all, patients_all, img_channel_no_all, org_id_all, frame_no_all, pixel_resolution_all, frame_duration_all, total_vid_frames) : tuple
+        the metadata of the video expanded to every measured object and all its timepoints. 
+    boundaries_all_export : (n_object_instances x n_boundary_pts x 2)
+        the flattened array of detected object boundaries.
+    
+    """
+    import numpy as np 
+    
+    # get the corresponding info for the given experiment
+    select_meta = np.arange(len(org_expt_table))[org_expt_table['Filename'].values == expt][0]
+    meta_info = org_expt_table.loc[select_meta]
+    
+    # parse channels
+    # parse the genotypes and channel information.
+    expt_channels = meta_info['Img_Channel']
+    # check it is integer or str
+    expt_channels_result = isinstance(expt_channels, np.int64)
+    
+    if expt_channels_result:
+        expt_channels = np.hstack([int(expt_channels)])
+    else:
+        if channels_sep in expt_channels:
+            expt_channels = expt_channels.split(channels_sep)
+            expt_channels = np.hstack([int(ch) for ch in expt_channels])
+        else:
+            expt_channels = np.hstack([int(expt_channels)])
+     
+    # parse genetics 
+    genotype_channels = meta_info['Genetics']
+    try:
+        if np.isnan(genotype_channels)==False:
+            if genetics_sep in genotype_channels:
+                genotype_channels = genotype_channels.split(genetics_sep)
+                genotype_channels = np.hstack([ge.strip() for ge in genotype_channels])
+            else:
+                genotype_channels = np.hstack([genotype_channels.strip()])
+        else:
+            genotype_channels = np.hstack([np.nan])
+    except:
+        if genotype_channels:
+            if genetics_sep in genotype_channels:
+                genotype_channels = genotype_channels.split(genetics_sep)
+                genotype_channels = np.hstack([ge.strip() for ge in genotype_channels])
+            else:
+                genotype_channels = np.hstack([genotype_channels.strip()])
+        else:
+            genotype_channels = np.hstack([np.nan])
+        
+    # parse conditions 
+    condition_channels = meta_info['Conditions']
+    try:
+        if np.isnan(condition_channels)==False:
+            if conditions_sep in condition_channels:
+                condition_channels = condition_channels.split(conditions_sep)
+                condition_channels = np.hstack([cond.strip() for cond in condition_channels])
+            else:
+                condition_channels = np.hstack([condition_channels.strip()])
+        else:
+            condition_channels = np.hstack([np.nan])
+    except:
+        if condition_channels:
+            if conditions_sep in condition_channels:
+                condition_channels = condition_channels.split(conditions_sep)
+                condition_channels = np.hstack([cond.strip() for cond in condition_channels])
+            else:
+                condition_channels = np.hstack([condition_channels.strip()])
+        else:
+            condition_channels = np.hstack([np.nan])
+        
+        
+    # parse patients
+    patients_channels = meta_info['Patients']
+    try:
+        if np.isnan(patients_channels)==False:
+            if patients_sep in patients_channels:
+                patients_channels = patients_channels.split(patients_sep)
+                patients_channels = np.hstack([patient.strip() for patient in patients_channels])
+            else:
+                patients_channels = np.hstack([patients_channels.strip()])
+        else:
+            patients_channels = np.hstack([np.nan])
+    except:
+        if patients_channels:
+            if patients_sep in patients_channels:
+                patients_channels = patients_channels.split(patients_sep)
+                patients_channels = np.hstack([patient.strip() for patient in patients_channels])
+            else:
+                patients_channels = np.hstack([patients_channels.strip()])
+        else:
+            patients_channels = np.hstack([np.nan])
+        
+    pixel_res = meta_info['pixel_resolution[um]']
+    time_res = meta_info['time_resolution[h]']
+
+    total_vid_frames = meta_info['n_frames'] # not really used per say .... 
+    
+    """
+    below is the compilation process. 
+    """
+#    which for some reason is super slow
+#    # the below headers in the csv export out instead as arrays. 
+#    headers = np.hstack(['Filename',
+#                         'Condition',
+#                         'Genetics',
+#                         'Img_Channel_No', 
+#                         'Org_ID', 
+#                         'Frame_No', 
+#                         'pixel_resolution[um]',
+#                         'Frame_Duration[h]',
+#                         'Total_Video_Frame_No',
+    filenames_all = []
+    conditions_all = []
+    genetics_all = []
+    patients_all = []
+    img_channel_no_all = []
+    org_id_all = []
+    frame_no_all = []
+    pixel_resolution_all = []
+    frame_duration_all = []
+    total_vid_frames_all = []
+    
+    boundaries_all_export = [] 
+    
+    for channel_ii, boundaries_channel in enumerate(boundaries):
+        # -> iterate over channels.
+#        print(boundaries_channel.shape)
+        
+        if (channel_ii+1) in list(expt_channels):
+            # print('hello', expt_channels)
+            gene = genotype_channels[expt_channels==channel_ii+1][0]
+            condition = condition_channels[expt_channels==channel_ii+1][0]
+            patient = patients_channels[expt_channels==channel_ii+1][0]
+            
+            # -> iterate over organoids 
+            # do nothing otherwise.
+            for bb_ii, boundaries_channel_ii in enumerate(boundaries_channel):
+                # -> iterate over timepoints. 
+#                print(boundaries_channel_ii.shape)
+                # bb_ii is the org_id. 
+                for bb_ii_tt, boundaries_ii_tt in enumerate(boundaries_channel_ii):
+#                    print(len(metrics_names))
+                    # if features are nan do nothing
+#                    print(boundaries_ii_tt.shape) # this can also be empty!.
+                    # these are now coordinates.... 
+#                    if len(boundaries_ii_tt) > 0:
+                    if ~np.isnan(boundaries_ii_tt[0][0]):
+                        
+#                        print(channel_ii)
+                        filenames_all.append(expt)
+                        patients_all.append(patient)
+                        # conditions_all.append(meta_info['Condition'].strip())
+                        conditions_all.append(condition)
+                        genetics_all.append(gene)
+                        img_channel_no_all.append(channel_ii+1)
+                        org_id_all.append(bb_ii+1)
+                        frame_no_all.append(bb_ii_tt+1)
+                        pixel_resolution_all.append(pixel_res)
+                        frame_duration_all.append(time_res)
+                        total_vid_frames_all.append(total_vid_frames) # this is causing the issue
+                        
+                        boundaries_all_export.append(boundaries_ii_tt)
+                        
+    
+    filenames_all = np.hstack(filenames_all)
+    patients_all = np.hstack(patients_all)
+    conditions_all = np.hstack(conditions_all)
+    genetics_all = np.hstack(genetics_all)
+    img_channel_no_all = np.hstack(img_channel_no_all)
+    org_id_all = np.hstack(org_id_all)
+    frame_no_all = np.hstack(frame_no_all)
+    pixel_resolution_all = np.hstack(pixel_resolution_all)
+    frame_duration_all = np.hstack(frame_duration_all)
+    total_vid_frames_all = np.hstack(total_vid_frames_all)
+#    
+##    print(filenames_all.shape)
+##    print(len(boundaries_all_export))
+#    # the creation of the array kills? 
+    boundaries_all_export = np.array(boundaries_all_export)
+#    print(boundaries_all_export.shape)
+    
+    return (filenames_all, conditions_all, genetics_all, patients_all, 
+            img_channel_no_all, org_id_all, frame_no_all, 
+            pixel_resolution_all, frame_duration_all, total_vid_frames) , boundaries_all_export
+
+
+def construct_metrics_table_csv(expt, 
+                                org_expt_table, 
+                                metrics, 
+                                metricslabels,
+                                channels_sep=',', 
+                                 patients_sep='+', 
+                                 conditions_sep='+', 
+                                genetics_sep='+'):
+    r""" For the SAM phenome of a given video and the global metadata for the dataset this video was part of, this function produces a table output using the global metadata to annotate this video, so it can be compiled into one large table.
+    
+    Parameters
+    ----------
+    expt : str
+        filename of the video. This should match with that specified in the global metadata as this acts like the key to pull out the correct information row. 
+    org_expt_table : pd.DataFrame
+        Pandas dataframe of the global metadata of the generated standard template for all the videos of a dataset
+    metrics : (n_objects, n_frames, n_features) array
+        the features computed for every tracked organoid in the given video
+    metricslabels : 
+        the names of the features computed for every tracked organoid in the given video
+    channels_sep : str
+        videos may be multichannel. the Img_Channels column of the metadata table specifies objects from which channel is considered for analysis. More than one specified channel should be indicated with a delimiter e.g. 1,2 for first, second image channel respectively
+    patients_sep : str
+        videos may have objects from different patients/sources for multichannels. the Patients column of the metadata table is used to specify the source for each video channel and this should be indicated with a delimiter. the delimiter defaults to '+'
+    conditions_sep : str
+        videos may have objects subject to different treatments for multichannels. the Conditions column of the metadata table is used to specify the treatment condition for each video channel and this should be indicated with a delimiter. the delimiter defaults to '+'
+    genetics_sep : str
+        videos may have objects of different genotype for multichannels. the Genetics column of the metadata table is used to specify the genotype for each video channel and this should be indicated with a delimiter. the delimiter defaults to '+'
+   
+    
+    Returns
+    -------
+    all_data : pd.DataFrame
+        the merged metadata and SAM features table
+    
+    """
+    import pandas as pd 
+    import numpy as np 
+    
+    # get the corresponding info for the given experiment
+    select_meta = np.arange(len(org_expt_table))[org_expt_table['Filename'].values == expt][0]
+    meta_info = org_expt_table.loc[select_meta]
+    
+    # parse the genotypes and channel information.
+    expt_channels = meta_info['Img_Channel']
+    # check it is integer or str
+    expt_channels_result = isinstance(expt_channels, np.int64)
+    
+    if expt_channels_result:
+        expt_channels = np.hstack([int(expt_channels)])
+    else:
+        if channels_sep in expt_channels:
+            expt_channels = expt_channels.split(channels_sep)
+            expt_channels = np.hstack([int(ch) for ch in expt_channels])
+        else:
+            expt_channels = np.hstack([int(expt_channels)])
+        
+    # parse genetics 
+    genotype_channels = meta_info['Genetics']
+    try:
+        if np.isnan(genotype_channels)==False:
+            if genetics_sep in genotype_channels:
+                genotype_channels = genotype_channels.split(genetics_sep)
+                genotype_channels = np.hstack([ge.strip() for ge in genotype_channels])
+            else:
+                genotype_channels = np.hstack([genotype_channels.strip()])
+        else:
+            genotype_channels = np.hstack([np.nan])
+    except:
+        if genotype_channels:
+            if genetics_sep in genotype_channels:
+                genotype_channels = genotype_channels.split(genetics_sep)
+                genotype_channels = np.hstack([ge.strip() for ge in genotype_channels])
+            else:
+                genotype_channels = np.hstack([genotype_channels.strip()])
+        else:
+            genotype_channels = np.hstack([np.nan])
+        
+    # parse conditions 
+    condition_channels = meta_info['Conditions']
+    try:
+        if np.isnan(condition_channels)==False:
+            if conditions_sep in condition_channels:
+                condition_channels = condition_channels.split(conditions_sep)
+                condition_channels = np.hstack([cond.strip() for cond in condition_channels])
+            else:
+                condition_channels = np.hstack([condition_channels.strip()])
+        else:
+            condition_channels = np.hstack([np.nan])
+    except:
+        if condition_channels:
+            if conditions_sep in condition_channels:
+                condition_channels = condition_channels.split(conditions_sep)
+                condition_channels = np.hstack([cond.strip() for cond in condition_channels])
+            else:
+                condition_channels = np.hstack([condition_channels.strip()])
+        else:
+            condition_channels = np.hstack([np.nan])
+        
+        
+    # parse patients
+    patients_channels = meta_info['Patients']
+    try:
+        if np.isnan(patients_channels)==False:
+            if patients_sep in patients_channels:
+                patients_channels = patients_channels.split(patients_sep)
+                patients_channels = np.hstack([patient.strip() for patient in patients_channels])
+            else:
+                patients_channels = np.hstack([patients_channels.strip()])
+        else:
+            patients_channels = np.hstack([np.nan])
+    except:
+        if patients_channels:
+            if patients_sep in patients_channels:
+                patients_channels = patients_channels.split(patients_sep)
+                patients_channels = np.hstack([patient.strip() for patient in patients_channels])
+            else:
+                patients_channels = np.hstack([patients_channels.strip()])
+        else:
+            patients_channels = np.hstack([np.nan])
+        
+    pixel_res = meta_info['pixel_resolution[um]']
+    time_res = meta_info['time_resolution[h]']
+
+    total_vid_frames = meta_info['n_frames'] # not really used per say .... 
+    
+    
+    all_data = []
+    metrics_names = [name.strip() for name in metricslabels]
+    
+    print(genotype_channels, expt_channels)
+    
+    for channel_ii, metrics_channel in enumerate(metrics):
+        
+        if (channel_ii+1) in list(expt_channels):
+            gene = genotype_channels[expt_channels==channel_ii+1][0]
+            condition = condition_channels[expt_channels==channel_ii+1][0]
+            patient = patients_channels[expt_channels==channel_ii+1][0]
+            
+            # do nothing otherwise.
+            for bb_ii, metrics_ii in enumerate(metrics_channel):
+                
+                # bb_ii is the org_id. 
+                for bb_ii_tt, metrics_ii_tt in enumerate(metrics_ii):
+#                    print(len(metrics_names))
+                    # if features are nan do nothing
+                    if ~np.isnan(metrics_ii_tt[0]):
+                        data = np.hstack([ expt, # filename
+                                           condition, #experimental condition in the well.
+                                           gene, # want the genetics of this orgnaoid
+                                           patient,
+                                           channel_ii+1, #want the image channel.
+                                           bb_ii+1,  # want the oranoid id.
+                                           bb_ii_tt+1, # want the frame_no.
+                                           pixel_res,
+                                           time_res, 
+                                           total_vid_frames, 
+                                           metrics_ii_tt, 
+                                            ])
+                        
+                        all_data.append(data)
+                        
+    all_data = np.array(all_data, dtype=object)
+    headers = np.hstack(['Filename',
+                         'Condition',
+                         'Genetics',
+                         'Patients',
+                         'Img_Channel_No', 
+                         'Org_ID', 
+                         'Frame_No', 
+                         'pixel_resolution[um]',
+                         'Frame_Duration[h]',
+                         'Total_Video_Frame_No',
+                         metrics_names])
+                           
+    all_data = pd.DataFrame(all_data, 
+                            index=None,
+                            columns=headers)
+    
+    return all_data
 
 
 def load_SPOT_features_files(analysisfolders, 

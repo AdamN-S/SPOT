@@ -1058,7 +1058,7 @@ def compute_heatmap_density_image_Embedding(lower_dimension_pts_2D,
         sigma = sigma_factor*np.mean(pairwise_distances(uu_tform[select])) # how to get a better estimate... 
         
         grid_pts_xy = grid_pts_image.copy().astype(np.float32)
-        grid_pts_xy[xy[:,0].astype(np.int), xy[:,1].astype(np.int)] += 1. # have to keep adding.
+        grid_pts_xy[xy[:,0].astype(np.int32), xy[:,1].astype(np.int32)] += 1. # have to keep adding.
         grid_pts_xy = skfilters.gaussian(grid_pts_xy, 
                                          sigma=sigma, 
                                          mode='reflect', 
@@ -1203,7 +1203,7 @@ def compute_phenotypic_trajectory(lower_dimension_pts_2D,
                 xy = uu_tform[select].copy()
                 sigma = sigma_factor*np.nanmean(pairwise_distances(uu_tform[select])) # how to get a better estimate... 
                 
-                grid_pts_xy = grid_pts_image.copy().astype(np.float)
+                grid_pts_xy = grid_pts_image.copy().astype(np.float32)
                 grid_pts_xy[xy[:,0].astype(np.int32), xy[:,1].astype(np.int32)] += 1. # have to keep adding.
                 grid_pts_xy = skfilters.gaussian(grid_pts_xy, sigma=sigma, mode='reflect', preserve_range=True) # depends on the sigma. 
                 

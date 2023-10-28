@@ -26,10 +26,12 @@ Exemplar scripts to run every step of the workflow are provided in the Examples 
 5. SPOT_Stage1_Step4_postprocess_segment_tracked_bbox-RGB-confocal_video.py
 
 **for SPOT Stage 2: computation of SAM (Shape, Appearance and Motion) phenome:**
+1. SPOT_Stage2_Step1_compute_SAM_phenomes.py
+2. SPOT_Stage2_Step2_generate_metadata_table.py
+3. SPOT_Stage2_Step3_compile_and_export_SAM_phenomes.py
 
 **for SPOT Stage 3: analysis of SAM (Shape, Appearance and Motion) phenome:**
 1. SPOT_Stage3_Example-cell_tracking_challenge_dataset.py
-
 
 ## Pretrained Neural Network Models for organoid detection and segmentation
 
@@ -41,21 +43,7 @@ make html
 ```
 
 ## To install
-The majority of the requirements of the package can be installed using pip:
-```shell
-pip install .
-```
-You will need to install the demeter package from source in order to compute Euler Characteristic Curve (ECC) shape features:
-
-* download demeter with:
-```shell
-git clone https://github.com/amezqui3/demeter/
-```
-* move to the directory:
-```shell
-cd demeter
-```
-* install with:
+The package can be installed using pip:
 ```shell
 pip install .
 ```

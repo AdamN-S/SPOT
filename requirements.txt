@@ -1,7 +1,6 @@
-tensorflow-gpu==2.5.*
+tensorflow-gpu==2.10.*
 pillow
-numpy
-scipy
+mahotas
 scikit-learn
 scikit-image
 opencv-contrib-python
@@ -12,3 +11,5 @@ seaborn
 networkx
 hmmviz
 pandas
+numpy>=1.21
+scipy

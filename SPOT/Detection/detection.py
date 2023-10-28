@@ -314,7 +314,7 @@ def write_bbox_files(filename, detections):
     with open(filename, 'w') as f:
         for det in detections:
             label, score, box = det
-            box = np.array(box).astype(np.int)
+            box = np.array(box).astype(np.int32)
             
             f.write(label+'\t'+str(score)+'\t'+str(box[0])+'\t'+str(box[1])+'\t'+str(box[2])+'\t'+str(box[3])+'\n')
             

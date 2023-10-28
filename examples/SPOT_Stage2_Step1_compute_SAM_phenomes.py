@@ -8,7 +8,7 @@ Created on Sat Oct  1 01:51:28 2022
 if __name__=="__main__":
     
     """
-    This example shows how to postprocess the tracked organoid segmentations to remove unreliable/unstable tracks prior to SAM phenome computation
+    This example shows how to compute the SAM phenome using the postprocessed tracked organoid segmentations for a video
     
     """
     import numpy as np 
@@ -24,14 +24,21 @@ if __name__=="__main__":
     import SPOT.Utility_Functions.file_io as fio
     import SPOT.Tracking.track as SPOT_track
     import SPOT.Tracking.optical_flow as SPOT_optical_flow
+    import SPOT.Features.features as SPOT_SAM_features
     
     
 
     imfile = r'../data/organoids/fluorescent_murine_colon/KRAS G12D EYFP 2.wmv'
     basename = os.path.split(imfile)[-1].split('.wmv')[0]
     
-    
     vid = fio.read_video_cv2(imfile)
+    
+    """
+    We need to specify the time sampling and spatial resolution 
+    """
+    pixel_res = 2.76 # um 
+    time_res = 2 # h
+    
     
     """
     Get the blue channel vid only 
@@ -50,319 +57,162 @@ if __name__=="__main__":
     
     
     """
-    Load the segmentations
+    Load the postprocessed segmentations
     """
     # this is just to show how to autodetect for multiple channels. 
     segmentation_folder = r'C:\Users\fyz11\Documents\Work\Projects\Lu-Organoids\Paper\Suppl_GitHub_Code\test_outputs\test_segmentation_folder'
-    savematfiles = glob.glob(os.path.join(segmentation_folder, basename, 'org_boundaries-'+'Channel-'+'*.mat')) 
     
+    savematfolder = os.path.join(outfolder, basename)
+    savematfile = os.path.join(savematfolder, basename+'_boundaries_final_RGB.mat') 
+    
+    # load 
+    boundaries_organoids_RGB = spio.loadmat(savematfile)['boundaries_smooth_final']
+    
+    if boundaries_organoids_RGB.shape[0] == 1:
+        boundaries_organoids_RGB = boundaries_organoids_RGB[0]
+
     
     """
     Detect all the individual channel tracks 
     """
-    boundary_samples=200 # the target number of boundary samples, used originally in the tracking. (Stage 1, step 3)
+    imshape = vid.shape[1:-1]
     
-    channels_files = np.hstack([int(os.path.split(ff)[-1].split('Channel-')[1].split('.mat')[0]) for ff in savematfiles])
+    """
+    0. Precompute optical flow for each image channel 
+    """
+    optical_flow_params = dict(pyr_scale=0.5, levels=5, winsize=15, iterations=5, poly_n=3, poly_sigma=1.2, flags=0)
+    rev_channels = False # optionally specify if the channels should be reversed. 
+    
+    
+    flow_channels = []
+    
+    for ch in np.arange(vid.shape[-1]):
         
-    # this is to ensure that the tracks can be operated on as a single numpy array, by padding no detection with np.nan
-    boundaries_all = [SPOT_track.pad_tracks(spio.loadmat(savematfile)['boundaries'], boundary_samples=boundary_samples) for savematfile in savematfiles] # load in all the produced tracks into a list and pad....  
+        img_ch = vid[...,ch].copy()
+        img_ch = np.array([skexposure.rescale_intensity(frame) for frame in img_ch])
+        flow_ch = SPOT_optical_flow.extract_vid_optflow(img_ch, 
+                                                         flow_params=optical_flow_params,
+                                                         rescale_intensity=True)
+        flow_channels.append(flow_ch)
+        
+    if rev_channels:
+        flow_channels = flow_channels[::-1]
+        boundaries_organoids_RGB = boundaries_organoids_RGB[::-1] # reverse. 
     
-    
-    
+
     """
-    Run some quality control by filtering out any channels that had zero valid tracks. 
+    1. Compute and save the metrics into separate .mat files. (save as .pkl files using fio.write_pickle in the same way if individual file is > 4GB)
+        a) shape features.
+        b) image appearance features
+        c) motion features.
     """
-    boundaries_all_nan = [SPOT_track.filter_nan_tracks(tra) for tra in boundaries_all]
     
-    # reconstitute for plotting and for easy access. 
-    boundaries_all_start = []
+    # a) shape features. 
+    all_metrics = []
+      
+    for boundaries_ii, boundaries in enumerate(boundaries_organoids_RGB):
     
-    file_counter = 0 
-    for ch_no in range(n_channels):
-        if ch_no+1 in channels_files:
-            boundaries_all_start.append(boundaries_all_nan[file_counter])
-            file_counter += 1 
+        if len(boundaries) > 0 :
+            
+            print('computing shape metrics for Channel %d' %(boundaries_ii+1))
+            metrics, metrics_labels, metrics_norm_bool = SPOT_SAM_features.compute_boundary_morphology_features(boundaries, 
+                                                                                                                  imshape,  
+                                                                                                                  all_feats_compute=True, 
+                                                                                                                  contour_curve_feats=True, 
+                                                                                                                  curve_order=4, 
+                                                                                                                  curve_err=1., 
+                                                                                                                  geom_features=True,
+                                                                                                                  morph_features=True,
+                                                                                                                  fourier_features=True, 
+                                                                                                                  shape_context_features=True,
+                                                                                                                  norm_scm=True,
+                                                                                                                  n_ref_pts_scm=5,
+                                                                                                                  pixel_xy_res = pixel_res)
+        
+            all_metrics.append(metrics)
+            print(metrics.shape)
         else:
-            boundaries_all_start.append([])
-    
-    
-    # detect any all nan tracksets 
-    remove_index = np.hstack([len(bb) == 0 for bb in boundaries_all_nan])
-    
-    channels_files = [ channels_files[ii] for ii in np.arange(len(channels_files)) if remove_index[ii]==False]
-    boundaries_all_nan = [ boundaries_all_nan[ii] for ii in np.arange(len(boundaries_all_nan)) if remove_index[ii]==False]
-    
-    
-    """
-    If there is at least one channel with valid tracks then proceed to do the following postprocessing of tracks
-    """
-    
-    # setup some parameters. 
-    border_pixel_size = 20 # implement larger. 
-    border_pixel_frac = .1
-    temporal_smooth_win_size = 3 # window size of 3 frames -> CNN seg requires less temporal smoothing. 
-    saveplots = True # we will save. 
+            all_metrics.append([])
         
-    split_tracks_bool = True
-    min_split_track_len = 5 # minimum number of frame points. 
-    iou_consistency_thresh = .25 # minimum threshold for consistent shape tracks. #-> this is a bit too much for the spreading. 
-    rev_channels_for_plot = False # set this to true to reverse RGB channels when generating the final visualization. 
-    ds = 1 # no downsampling 
+        
+    savemetricfile = os.path.join(savematfolder, basename+'_final_cont_RGB_shape-feats.mat')
+    spio.savemat(savemetricfile, {'expt': basename, 
+                                  'imgfile':imfile,
+                                  'rgb_rev': rev_channels, 
+                                  'metric_names': metrics_labels, 
+                                  'metric_norm_bool': metrics_norm_bool, 
+                                  'metrics': all_metrics,
+                                  'pixel_res': pixel_res})
 
-    if len(boundaries_all_nan) > 0: 
-            
-        # else don't generate anything.
-        """
-        1. Concatenate remaining sets of tracks (should not be all nan) and apply non-stable filter to suppress potential of tracking the same organoid across channels and within the same video.
-        """
-        # =============================================================================
-        #     Non stable track suppression and reassignment filter
-        # =============================================================================
-        boundaries_all_filter = SPOT_track.non_stable_track_suppression_filter(vid, 
-                                                                                boundaries_all_nan,
-                                                                                track_overlap_thresh=0.5, 
-                                                                                weight_nan=0., weight_smooth=0.1, 
-                                                                                max_obj_frames=10,
-                                                                                obj_mean_func=np.nanmean,
-                                                                                smoothness_mean_func=np.nanmean,
-                                                                                debug_viz=False)
-                   
-        # repeat the above removal of index. 
-        remove_index = np.hstack([len(bb) == 0 for bb in boundaries_all_filter])
-        
-        channels_files = [ channels_files[ii] for ii in np.arange(len(channels_files)) if remove_index[ii]==False]
-        boundaries_all_filter = [ boundaries_all_filter[ii] for ii in np.arange(len(boundaries_all_filter)) if remove_index[ii]==False]
-        
 
-        # =============================================================================
-        #     Marking of border organoids to output directly things here (i.e. no temporal smoothing etc.)
-        # =============================================================================
-        border_organoids_all_filter_bool = [SPOT_track.detect_image_border_organoid_tracks( boundaries_all_filter[jj], 
-                                                                                            img_shape=vid[0,...,0].shape, 
-                                                                                            border_pad = border_pixel_size, 
-                                                                                            out_percent = border_pixel_frac, # this is the upper fraction of boundary points located at the image borders.
-                                                                                            prepadded_tracks=True,
-                                                                                            pad_track_len=boundary_samples,
-                                                                                            apply_mask=False) for jj in range(len(boundaries_all_filter))] 
-                    
-        
-        # =============================================================================
-        #     Reconstruction for saving out, these should now be the proper tracks.  
-        # =============================================================================
-        boundaries_all_filter_all_ch = []
-        border_organoids_all_filter_bool_all_ch = []
-        
-        file_counter = 0 
-        for ch_no in range(n_channels):
-            if ch_no+1 in channels_files:
-                boundaries_all_filter_all_ch.append(boundaries_all_filter[file_counter])
-                border_organoids_all_filter_bool_all_ch.append(border_organoids_all_filter_bool[file_counter])
-                file_counter += 1 
-            else:
-                boundaries_all_filter_all_ch.append([])
-                border_organoids_all_filter_bool_all_ch.append([])
-        
-        # =============================================================================
-        # =============================================================================
-        # =============================================================================
-        # # #   Extended postprocessing for analysis which includes temporal smoothing, splitting of and construction of more stable iou tracks. 
-        # =============================================================================
-        # =============================================================================
-        # =============================================================================
-        
-        remove_index = np.hstack([len(bb) == 0 for bb in boundaries_all_filter])
-        
-        channels_files = [ channels_files[ii] for ii in np.arange(len(channels_files)) if remove_index[ii]==False]
-        boundaries_list_post_filter = [ boundaries_all_filter[ii] for ii in np.arange(len(boundaries_all_filter)) if remove_index[ii]==False]
-        
-        
-        """
-        2. Temporal smoothing  
-        """
-        # a) temporal track smoothing with moving average 
-        boundaries_list_filter_smooth = [SPOT_track.temporal_smooth_tracks( tra_set, 
-                                                                            method='ma', 
-                                                                            win_size=temporal_smooth_win_size, 
-                                                                            prepadded_tracks=True,
-                                                                            pad_track_len=boundary_samples, 
-                                                                            ma_avg_func=np.nanmean,
-                                                                            ma_pad_mode='edge')  for tra_set in boundaries_list_post_filter] 
-                
-        """
-        3. ensure that successive frames have overlap in appearance as measured by intersection-over-union (IoU), Where inconsistent, the tracks are broken up into tracklets.
-        """
-        # b) frame by frame check of iou to produce continuous tracks
-        boundaries_list_filter_smooth_continuous = [SPOT_track.detect_iou_breaks_trackset(track_set, 
-            																	    use_bbox=True, 
-                                                                                    iou_thresh=iou_consistency_thresh,
-                                                                                    prepadded_tracks=True, 
-                                                                                    pad_track_len=boundary_samples, 
-                                                                                    split_tracks=split_tracks_bool, 
-                                                                                    min_split_track_len=min_split_track_len) for track_set in boundaries_list_filter_smooth]
-       
-        
-        boundaries_list_filter_smooth_breaks = [bb[0] for bb in boundaries_list_filter_smooth_continuous] 
-        boundaries_list_filter_smooth_cont_boundaries = [bb[1] for bb in boundaries_list_filter_smooth_continuous] 
-        
-        
-        """
-        4. remove objects close to the border, which means their shape is out of the field-of-view but we would measure reduced area / morphologies etc. that could skew the analysis
-        """
-        # c) redetect border organoids and remove 
-        border_organoids_list = [SPOT_track.detect_image_border_organoid_tracks( bb, 
-                                                                                img_shape=vid[0,...,0].shape, 
-                                                                                border_pad = border_pixel_size, # smoothing will need a larger border. 
-                                                                                out_percent = border_pixel_frac, # this is good. 
-                                                                                prepadded_tracks=True,
-                                                                                pad_track_len=boundary_samples,
-                                                                                apply_mask=True) for bb in boundaries_list_filter_smooth_cont_boundaries]
+    # b) Image Appearance (textural) features. 
+    all_metrics = []
+      
+    for boundaries_ii, boundaries in enumerate(boundaries_organoids_RGB):
     
-        border_organoids_list_masks_post = [bb[0] for bb in border_organoids_list]
-        border_organoids_list_boundaries_post = [bb[1] for bb in border_organoids_list]
-        
-        
-        """
-        5. final reconstruction of tracks for all channels. 
-        """
-        boundaries_all_filter_all_ch_final = []
-        border_organoids_all_border_bool_all_ch_final = []
-        border_organoids_all_breakpts_all_ch_final = []
-        
-        file_counter = 0 
-        for ch_no in range(n_channels):
-            if ch_no+1 in channels_files:
-                boundaries_all_filter_all_ch_final.append(border_organoids_list_boundaries_post[file_counter])
-                border_organoids_all_border_bool_all_ch_final.append(border_organoids_list_masks_post[file_counter])
-                border_organoids_all_breakpts_all_ch_final.append(boundaries_list_filter_smooth_breaks[file_counter])
-                file_counter += 1 
-            else:
-                boundaries_all_filter_all_ch_final.append([])
-                border_organoids_all_border_bool_all_ch_final.append([])
-                border_organoids_all_breakpts_all_ch_final.append([])
+        if len(boundaries) > 0 :
+            print('computing motion metrics for Channel %d' %(boundaries_ii+1))
+            metrics, metrics_labels, metrics_norm_bool = SPOT_SAM_features.compute_boundary_texture_features(vid[...,boundaries_ii], 
+                                                                                                            boundaries, 
+                                                                                                            use_gradient_vid=False,
+                                                                                                            compute_all_feats =True,
+                                                                                                            compute_intensity_feats=True,
+                                                                                                            compute_contour_intensity_feats=True,
+                                                                                                            n_contours=3,
+                                                                                                            n_angles=1,
+                                                                                                            angle_start=None,
+                                                                                                            compute_sift=True,
+                                                                                                            siftshape=(64,64),
+                                                                                                            compute_haralick=True,
+                                                                                                            haralick_distance=15)
+            all_metrics.append(metrics)
+        else:
+            all_metrics.append([])
+            
+    savemetricfile = os.path.join(savematfolder, basename+'_final_cont_RGB_image-feats.mat')
+    spio.savemat(savemetricfile, {'expt': basename, 
+                                  'imgfile':imfile,
+                                  'rgb_rev': rev_channels, 
+                                  'metric_names': metrics_labels, 
+                                  'metric_norm_bool': metrics_norm_bool, 
+                                  'metrics': all_metrics})
 
+
+    # c) Motion features. 
+    all_metrics = []
+      
+    for boundaries_ii, boundaries in enumerate(boundaries_organoids_RGB):
     
-	# =============================================================================
-	# =============================================================================
-	# =============================================================================
-	# # #         Saving all the computations and parameters used to generate this final set of tracks. 
-	# =============================================================================
-	# =============================================================================
-	# =============================================================================
-    
-    """
-    Final saving
-    """
-    savematfolder = os.path.join(outfolder, basename)
-    savematfile_out = os.path.join(savematfolder, basename+'_boundaries_final_RGB.mat') # final combined trackset for all channels. 
-    
-    # save the final set of boundaries + intermediate applied masks. 
-    spio.savemat(savematfile_out, { 'expt': basename,
-                                   'boundaries_raw' : boundaries_all_start, 
-                                   'boundaries_filter' : boundaries_all_filter_all_ch,
-                                   'border_organoids_filter_bool' : border_organoids_all_filter_bool_all_ch,
-                                   'boundaries_smooth_final' :  boundaries_all_filter_all_ch_final, 
-                                   'border_organoids_smooth_final_bool' : border_organoids_all_border_bool_all_ch_final,
-                                   'boundaries_organoids_smooth_final_breaks' : border_organoids_all_breakpts_all_ch_final,
-									'ds': ds, 
-									'boundary_samples':boundary_samples, 
-									'rev_channels_for_plot': rev_channels_for_plot, 
-									'border_pixel_size': border_pixel_size, 
-									'border_pixel_frac': border_pixel_frac, 
-									'temporal_smooth_win_size':temporal_smooth_win_size, 
-									'split_tracks_bool': split_tracks_bool, 
-									'min_split_track_len': min_split_track_len, 
-									'iou_consistency_thresh': iou_consistency_thresh }) # to do: incorporate this into the saving. for future. 
+        if len(boundaries) > 0 :
+            print('computing motion metrics for Channel %d' %(boundaries_ii+1))
+#                vid_flow = flow_channels[boundaries_ii].copy()
+            metrics, metrics_labels, metrics_norm_bool = SPOT_SAM_features.compute_boundary_motion_features(flow_channels[boundaries_ii], 
+                                                                                                              boundaries, 
+                                                                                                              compute_all_feats =True,
+                                                                                                              compute_global_feats=True,
+                                                                                                              compute_contour_feats=True,
+                                                                                                              n_contour_feat_bins=8,
+                                                                                                              cnt_sigma=3., 
+                                                                                                              n_contours=3,
+                                                                                                              n_angles=1,
+                                                                                                              angle_start=None,
+                                                                                                              pixel_res=pixel_res,
+                                                                                                              time_res=time_res,
+                                                                                                              compute_sift_feats=True,
+                                                                                                              siftshape=(64,64))
             
-    """
-    Final visualization
-    """
-    if saveplots:
-        
-        plotfolderoriginal = os.path.join(outfolder, basename, 'raw_RGB'); fio.mkdir(plotfolderoriginal)
-        plotfolderfilter = os.path.join(outfolder, basename, 'filter_RGB'); fio.mkdir(plotfolderfilter)
-        plotfolderfinal = os.path.join(outfolder, basename, 'filter_smooth_final_RGB'); fio.mkdir(plotfolderfinal)
-
-        img_shape = vid.shape[1:-1]
-
-        plot_colors = ['r', 'g', 'b']
-        if rev_channels_for_plot:
-            plot_colors = plot_colors[::-1]
-
-        for frame_no in range(len(vid)):
+            all_metrics.append(metrics)
+        else:
+            all_metrics.append([])
             
-            
-            # original 
-            fig, ax = plt.subplots(figsize=(10,10))
-            plt.title('Frame: %d' %(frame_no+1))
-            vid_overlay = vid[frame_no].copy()
-            
-            if rev_channels_for_plot:
-                vid_overlay = vid_overlay[...,::-1] 
-            ax.imshow(vid_overlay, alpha=.5)
-            
-            for bb_i, bb in enumerate(boundaries_all_start[:]): 
-                for bbb in bb:
-                    ax.plot(bbb[frame_no][:,1], 
-                            bbb[frame_no][:,0], color=plot_colors[bb_i], lw=3)
-            
-            ax.set_xlim([0, img_shape[1]-1])
-            ax.set_ylim([img_shape[0]-1, 0])
-            plt.axis('off')
-            plt.grid('off')
-            
-            fig.savefig(os.path.join(plotfolderoriginal, 
-                                     '%s-Frame-%s.png' %(basename, str(frame_no).zfill(3))), bbox_inches='tight')
-            plt.show()
-            plt.close(fig)
-            
-            
-            # filtered 
-            fig, ax = plt.subplots(figsize=(10,10))
-            plt.title('Frame: %d' %(frame_no+1))
-            vid_overlay = vid[frame_no].copy()
-            
-            if rev_channels_for_plot:
-                vid_overlay = vid_overlay[...,::-1] 
-            ax.imshow(vid_overlay, alpha=.5)
-            
-            for bb_i, bb in enumerate(boundaries_all_filter_all_ch[:]): 
-                for bbb in bb:
-                    ax.plot(bbb[frame_no][:,1], 
-                            bbb[frame_no][:,0], color=plot_colors[bb_i], lw=3)
-            
-            ax.set_xlim([0, img_shape[1]-1])
-            ax.set_ylim([img_shape[0]-1, 0])
-            plt.axis('off')
-            plt.grid('off')
-            
-            fig.savefig(os.path.join(plotfolderfilter, 
-                                     '%s-Frame-%s.png' %(basename, str(frame_no).zfill(3))), bbox_inches='tight')
-            plt.show()
-            plt.close(fig)
-            
-            
-            # final 
-            fig, ax = plt.subplots(figsize=(10,10))
-            plt.title('Frame: %d' %(frame_no+1))
-            vid_overlay = vid[frame_no].copy()
-            
-            if rev_channels_for_plot:
-                vid_overlay = vid_overlay[...,::-1] 
-            ax.imshow(vid_overlay, alpha=.5)
-            
-            for bb_i, bb in enumerate(boundaries_all_filter_all_ch_final[:]): 
-                for bbb in bb:
-                    ax.plot(bbb[frame_no][:,1], 
-                            bbb[frame_no][:,0], color=plot_colors[bb_i], lw=3)
-            
-            ax.set_xlim([0, img_shape[1]-1])
-            ax.set_ylim([img_shape[0]-1, 0])
-            plt.axis('off')
-            plt.grid('off')
-            
-            fig.savefig(os.path.join(plotfolderfinal, 
-                                     '%s-Frame-%s.png' %(basename, str(frame_no).zfill(3))), bbox_inches='tight')
-            plt.show()
-            plt.close(fig)
+    savemetricfile = os.path.join(savematfolder, basename+'_final_cont_RGB_motion-feats.mat')
+    spio.savemat(savemetricfile, {'expt': basename, 
+                                  'imgfile':imfile,
+                                  'rgb_rev': rev_channels, 
+                                  'metric_names': metrics_labels, 
+                                  'metric_norm_bool': metrics_norm_bool, 
+                                  'metrics': all_metrics,
+                                  'pixel_res': pixel_res,
+                                  'time_res': time_res})
 
 

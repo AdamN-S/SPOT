@@ -9,9 +9,301 @@ Module to compute Shape, Appearance, Motion (SAM) features for objects.
 """
 
 import numpy as np
+import scipy.ndimage as ndimage
+import scipy.special as special
+import pandas as pd
+import tifffile 
 # from scipy.spatial.distance import cdist
 # import pylab as plt
 # from math import sqrt, acos, pi
+
+
+# =============================================================================
+# ported from demeter package (ECC features)
+# =============================================================================
+
+def _neighborhood_setup(dimension, downsample = 1):
+    
+    import itertools
+    neighs = sorted(list(itertools.product(range(2), repeat=dimension)), key=np.sum)[1:]
+    neighs = list(map(tuple, np.array(neighs)*downsample))
+    subtuples = dict()
+    for i in range(len(neighs)):
+        subtup = [0]
+        for j in range(len(neighs)):
+            if np.all(np.subtract(neighs[i], neighs[j]) > -1):
+                subtup.append(j+1)
+        subtuples[neighs[i]] = subtup
+
+    return neighs, subtuples
+
+
+def _neighborhood(voxel, neighs, hood, dcoords):
+    hood[0] = dcoords[voxel]
+    neighbors = np.add(voxel, neighs)
+    for j in range(1,len(hood)):
+        key = tuple(neighbors[j-1,:])
+        if key in dcoords:
+            hood[j] = dcoords[key]
+    return hood
+
+def _centerVertices(verts):
+    origin = -1*np.mean(verts, axis=0)
+    verts = np.add(verts, origin)
+    return verts
+
+
+class CubicalComplex:
+    
+    def __init__(self, img):
+        self.img = img
+
+    def complexify(self, center=True, downsample=1):
+        scoords = np.nonzero(self.img)
+        scoords = np.vstack(scoords).T
+
+        skip = np.zeros(self.img.ndim, dtype=int) + downsample
+        coords = scoords[np.all(np.fmod(scoords, skip) == 0, axis=1), :]
+
+        keys = [tuple(coords[i,:]) for i in range(len(coords))]
+        dcoords = dict(zip(keys, range(len(coords))))
+        neighs, subtuples = _neighborhood_setup(self.img.ndim, downsample)
+        binom = [special.comb(self.img.ndim, k, exact=True) for k in range(self.img.ndim+1)]
+
+        hood = np.zeros(len(neighs)+1, dtype=np.int32)-1
+        cells = [[] for k in range(self.img.ndim+1)]
+
+        for voxel in dcoords:
+            hood.fill(-1)
+            hood = _neighborhood(voxel, neighs, hood, dcoords)
+            nhood = hood > -1
+            c = 0
+            if np.all(nhood[:-1]):
+                for k in range(1, self.img.ndim):
+                    for j in range(binom[k]):
+                        cell = hood[subtuples[neighs[c]]]
+                        cells[k].append(cell)
+                        c += 1
+                if nhood[-1]:
+                    cells[self.img.ndim].append(hood.copy())
+            else:
+                for k in range(1, self.img.ndim):
+                    for j in range(binom[k]):
+                        cell = nhood[subtuples[neighs[c]]]
+                        if np.all(cell):
+                            cells[k].append(hood[subtuples[neighs[c]]])
+                        c += 1
+
+        dim = self.img.ndim
+        for k in range(dim, -1, -1):
+            if len(cells[k]) > 0:
+                break
+
+        self.ndim = dim
+        self.cells = [np.array(cells[k]) for k in range(dim+1)]
+        if center:
+            self.cells[0] = _centerVertices(coords)
+        else:
+            self.cells[0] = coords
+
+        return self
+
+    def EC(self):
+        chi = 0
+        for i in range(len(self.cells)):
+            chi += ((-1)**i)*len(self.cells[i])
+
+        self.chi = chi
+        return chi
+
+    def summary(self):
+        cellnames = ['vertices', 'edges', 'squares', 'cubes']
+        for i in range(len(self.cells)):
+            if i < len(cellnames):
+                print('{}\t{}'.format(len(self.cells[i]), cellnames[i]))
+            else:
+                print('{}\t{:02d}hypercubes'.format(len(self.cells[i]), i))
+
+        chi = self.EC()
+        print('----\nEuler Characteristic: {}'.format(chi))
+        return 0
+
+    def ECC(self, filtration, T=32, bbox=None):
+
+        if bbox is None:
+            minh = np.min(filtration)
+            maxh = np.max(filtration)
+        else:
+            minh,maxh = bbox
+
+        buckets = [None for i in range(len(self.cells))]
+
+        buckets[0], bins = np.histogram(filtration, bins=T, range=(minh, maxh))
+
+        for i in range(1,len(buckets)):
+            if len(self.cells[i]) > 0 :
+                buckets[i], bins = np.histogram(np.max(filtration[self.cells[i]], axis=1), bins=T, range=(minh, maxh))
+
+        ecc = np.zeros_like(buckets[0])
+        for i in range(len(buckets)):
+            if buckets[i] is not None:
+                ecc = np.add(ecc, ((-1)**i)*buckets[i])
+
+        return np.cumsum(ecc)
+
+    def ECT(self, directions, T=32, verts=None, bbox=None):
+        if verts is None:
+            verts = self.cells[0]
+
+        ect = np.zeros(T*directions.shape[0], dtype=int)
+
+        for i in range(directions.shape[0]):
+            heights = np.sum(verts*directions[i,:], axis=1)
+            ecc = self.ECC(heights, T, bbox)
+            ect[i*T : (i+1)*T] = ecc
+
+        return ect
+
+    def triangulate(self, center=True, downsample=1):
+        scoords = np.nonzero(self.img)
+        scoords = np.vstack(scoords).T
+
+        skip = np.array([downsample,downsample,downsample])
+        coords = scoords[np.all(np.fmod(scoords, skip) == 0, axis=1), :]
+
+        keys = [tuple(coords[i,:]) for i in range(len(coords))]
+        dcoords = dict(zip(keys, range(len(coords))))
+        neighs, subtuples = _neighborhood_setup(self.img.ndim, downsample)
+        binom = [special.comb(self.img.ndim, k, exact=True) for k in range(self.img.ndim+1)]
+
+        hood = np.zeros(len(neighs)+1, dtype=np.int)-1
+        cells = [[] for k in range(self.img.ndim+1)]
+
+        for voxel in dcoords:
+            hood.fill(-1)
+            hood = _neighborhood(voxel, neighs, hood, dcoords)
+            nhood = hood > -1
+            c = 0
+            if np.all(nhood[:-1]):
+                for k in range(1, self.img.ndim):
+                    for j in range(binom[k]):
+                        cell = hood[subtuples[neighs[c]]]
+                        cells[k].append(cell)
+                        c += 1
+                if nhood[-1]:
+                    cells[self.img.ndim].append(hood.copy())
+            else:
+                for k in range(1, self.img.ndim):
+                    for j in range(binom[k]):
+                        cell = nhood[subtuples[neighs[c]]]
+                        if np.all(cell):
+                            cells[k].append(hood[subtuples[neighs[c]]])
+                        c += 1
+
+        dim = self.img.ndim
+        for k in range(dim, -1, -1):
+            if len(cells[k]) > 0:
+                break
+
+        self.ndim = dim
+        self.cells = [np.array(cells[k]) for k in range(dim+1)]
+        if center:
+            self.cells[0] = _centerVertices(coords)
+        else:
+            self.cells[0] = coords
+
+        return self
+
+
+def _pole_directions(parallels, meridians, x=0, y=1, z=2, tol=1e-10):
+    
+    dirs = np.zeros((2*(meridians*parallels)-meridians+2, 3), dtype=np.float64)
+    idx = 1
+
+    dirs[0, :] = np.array([0,0,0])
+    dirs[0, z] = 1
+
+    for i in range(parallels):
+        theta = (i+1)*np.pi/(2*parallels)
+        for j in range(meridians):
+            phi = j*2*np.pi/meridians
+            dirs[idx,x] = np.cos(phi)*np.sin(theta)
+            dirs[idx,y] = np.sin(phi)*np.sin(theta)
+            dirs[idx,z] = np.cos(theta)
+            idx += 1
+
+    for i in range(parallels-1):
+        theta = (i+1)*np.pi/(2*parallels) + 0.5*np.pi
+        for j in range(meridians):
+            phi = j*2*np.pi/meridians
+            dirs[idx,x] = np.cos(phi)*np.sin(theta)
+            dirs[idx,y] = np.sin(phi)*np.sin(theta)
+            dirs[idx,z] = np.cos(theta)
+            idx += 1
+
+
+    dirs[-1, :] = np.array([0,0,0])
+    dirs[-1, z] = -1
+    dirs[np.abs(dirs) < tol] = 0
+
+    return dirs
+
+# //////////////////////////////////////////////////////////////////////
+# For the 3D cases, the argument laid out by
+# M Deserno "How to generate equidistributed points on
+#            the surface of a sphere"
+# https://www.cmu.edu/biolphys/deserno/pdf/sphere_equi.pdf
+#
+# was followed to define both
+# uniformly random or regular direction choice.
+# //////////////////////////////////////////////////////////////////////
+
+def _random_directions(N=50, r=1, dims=3):
+    rng = np.random.default_rng()
+    phi = rng.uniform(0, 2*np.pi, N)
+
+    if dims == 2:
+        x = r*np.cos(phi)
+        y = r*np.sin(phi)
+
+        return np.column_stack((x,y))
+
+    if dims == 3:
+        z = rng.uniform(-r, r, N)
+        x = np.sqrt(r**2 - z**2)*np.cos(phi)
+        y = np.sqrt(r**2 - z**2)*np.sin(phi)
+
+        return np.column_stack((x,y,z))
+
+    else:
+        print("Function implemented only for 2 and 3 dimensions")
+
+def _regular_directions(N=50, r=1, dims=3):
+    if dims==2:
+        eq_angles = np.linspace(0, 2*np.pi, num=N, endpoint=False)
+        return np.column_stack((np.cos(eq_angles), np.sin(eq_angles)))
+
+    if dims==3:
+        dirs = np.zeros((N, 3), dtype=np.float64)
+        i = 0
+        a = 4*np.pi*r**2/N
+        d = np.sqrt(a)
+        Mtheta = np.round(np.pi/d)
+        dtheta = np.pi/Mtheta
+        dphi = a/dtheta
+        for m in range(int(Mtheta)):
+            theta = np.pi*(m + 0.5)/Mtheta
+            Mphi = np.round(2*np.pi*np.sin(theta)/dphi)
+            for n in range(int(Mphi)):
+                phi = 2*np.pi*n/Mphi
+                # sometimes we get an error due to i == N for some choices of N
+                if i < N:
+                    dirs[i,:] = r*np.sin(theta)*np.cos(phi), r*np.sin(theta)*np.sin(phi), r*np.cos(theta)
+                    i += 1
+
+        return dirs
+    else:
+        print("Function implemented only for 2 and 3 dimensions")
 
 
 # Ported from original BCF implementation in MATLAB
@@ -55,7 +347,7 @@ def shape_context(cont, n_ref=5, n_dist=5, n_theta=12, b_tangent=1, close_contou
     X = np.array([cont[:, 0]]).transpose()
     Y = np.array([cont[:, 1]]).transpose()
     # Set reference point
-    si = np.round(np.linspace(1, n_pt, n_ref)).astype('int32') - 1
+    si = np.round(np.linspace(1, n_pt, n_ref)).astype(np.int32) - 1
     V = cont[si, :]
     vx = np.array([V[:, 0]])
     vy = np.array([V[:, 1]])
@@ -174,7 +466,7 @@ def reorient_contour(cnt, shape):
     from skimage.draw import polygon
     from skimage.measure import regionprops
 
-    canvas = np.zeros(shape, dtype=np.int)
+    canvas = np.zeros(shape, dtype=np.int32)
 
     rr, cc = polygon(cnt[:,0],
                      cnt[:,1], shape=shape)
@@ -330,7 +622,7 @@ def extract_binary_regionprops(binary, pixel_xy_res=1.):
 
     # binary_pad = np.pad(binary, [[5,5], [5,5]], mode='constant')
     binary_pad = binary.copy()
-    regprop = regionprops((binary_pad*1).astype(np.int))[0]
+    regprop = regionprops((binary_pad*1).astype(np.int32))[0]
     
     feats_nonnorm = np.hstack([ regprop.area * (pixel_xy_res)**2.,
                                 regprop.convex_area * (pixel_xy_res)**2., # area is squared.
@@ -537,8 +829,8 @@ def compute_boundary_morphology_features(boundaries, imshape,
     # import shape_context_module as scm # this has been integrated into here.
 #    from sklearn.pairwise.metrics import pairwise_distances
     from sklearn.metrics.pairwise import pairwise_distances
-    import demeter.euler as euler
-    import demeter.directions as dirs
+    # import demeter.euler as euler
+    # import demeter.directions as dirs
     from tqdm import tqdm
 
 #    if imshape is not None:
@@ -679,7 +971,7 @@ def compute_boundary_morphology_features(boundaries, imshape,
                 if all_feats_compute==True or (all_feats_compute==False and fourier_features==True):
 
             #        cnt_fourier = compute_elliptic_feats([cnt], vid[0].shape, normalize=True).ravel()
-                    cnt_fourier = compute_fft_boundary_feats([boundary_ii_tt], imshape, pixel_xy_res=pixel_xy_res).ravel()
+                    cnt_fourier = compute_fft_boundary_feats([boundary_ii_tt], pixel_xy_res=pixel_xy_res).ravel()
             #        cnt_fourier = cnt_fourier[1:len(cnt)//2]
                     cnt_fourier = np.abs(cnt_fourier[1:len(cnt_fourier)//2]) # 1st is typically a DC offset, keep only magnitude information!.
                     cnt_fourier = np.abs(cnt_fourier)**(0.2) #* np.sign(cnt_fourier) # power normalisation? of the fourier features
@@ -698,9 +990,11 @@ def compute_boundary_morphology_features(boundaries, imshape,
                 """
                 if all_feats_compute==True or (all_feats_compute==False and ect_features==True):
 
-                    curve_comp = euler.CubicalComplex(cnt_binary).complexify()
+                    # curve_comp = euler.CubicalComplex(cnt_binary).complexify()
+                    curve_comp = CubicalComplex(cnt_binary).complexify()
                     # specify directions for integration.
-                    circle_dirs = dirs.regular_directions(36, dims=curve_comp.ndim) # how many directions.
+                    # circle_dirs = dirs.regular_directions(36, dims=curve_comp.ndim) # how many directions.
+                    circle_dirs = _regular_directions(36, dims=curve_comp.ndim)
 
                     # derive the
                     n_thresholds = 32
@@ -751,7 +1045,7 @@ def compute_boundary_morphology_features(boundaries, imshape,
     """
     reprocessing to get this in a standard format.
     """
-    out = np.array(out)
+    out = np.array(out, dtype=object)
 
     # make this a regular array for analysis. 
     n_org, n_time = boundaries.shape[:2]
@@ -849,7 +1143,7 @@ class DsiftExtractor:
         generates a derivative of Gaussian filter with the same specified :math:`\sigma` in both the X and Y
         directions.
         '''
-        fwid = np.int(2*np.ceil(sigma))
+        fwid = np.int32(2*np.ceil(sigma))
         G = np.array(range(-fwid,fwid+1))**2
         G = G.reshape((G.size,1)) + G
         G = np.exp(- G / 2.0 / sigma / sigma)
@@ -872,7 +1166,7 @@ class DsiftExtractor:
         positions: the positions of the features
         '''
 
-        image = image.astype(np.double)
+        image = image.astype(np.float32)
         if image.ndim == 3:
             # we do not deal with color images.
             image = np.mean(image,axis=2)
@@ -1005,10 +1299,10 @@ def _pol2cart(rho, phi):
 def _draw_polygon_mask(xy, shape):
     
     from skimage.draw import polygon
-    img = np.zeros(shape, dtype=np.bool)
+    img = np.zeros(shape, dtype=bool)
     
-    x_coords = np.clip(xy[:,0].astype(np.int), 0, shape[1]-1)
-    y_coords = np.clip(xy[:,1].astype(np.int), 0, shape[0]-1)
+    x_coords = np.clip(xy[:,0].astype(np.int32), 0, shape[1]-1)
+    y_coords = np.clip(xy[:,1].astype(np.int32), 0, shape[0]-1)
     rr, cc = polygon(y_coords,
                      x_coords)
     img[rr, cc] = 1
@@ -1086,7 +1380,7 @@ def _tile_uniform_radial_windows_boundary(imsize, n_r, n_theta, boundary_line,
     """
     construct the final set of masks (which is for the angles. )  
     """  
-    spixels = np.zeros((m,n), dtype=np.int)
+    spixels = np.zeros((m,n), dtype=np.int32)
     
     counter = 1
     for ii in range(len(all_dist_masks)):
@@ -1325,7 +1619,7 @@ def compute_boundary_texture_features(vid, boundaries,
 
         out.append(boundary_ii_descriptors)
 
-    out = np.array(out)
+    out = np.array(out, dtype=object)
 
     # make this a regular array for analysis.
     n_org, n_time = boundaries.shape[:2]
@@ -1773,7 +2067,7 @@ def compute_boundary_motion_features(vid_flow,
 
         out.append(boundary_ii_descriptors)
 
-    out = np.array(out)
+    out = np.array(out, dtype=object)
 
     # make this a regular array for analysis.
     n_org, n_time = boundaries.shape[:2]; n_time = n_time-1 # since this is motion.

@@ -129,7 +129,7 @@ if __name__=="__main__":
         # run this for all timepoints. 
         vid_bbox_tracks_segs, vid_bbox_tracks_contours = SPOT_track.segment_organoid_bbox_track(vid_ch,
                                                                                                  keep_bbox_tracks, # a densified track array 
-                                                                                                 segment_model, # bboxes are already loaded in yolo format.   
+                                                                                                 segment_model, # bboxes are already loaded in Yolo format.   
                                                                                                  segment_size=(pred_size, pred_size), 
                                                                                                  min_I=segment_min_I,
                                                                                                  segment_thresh=segment_thresh, # what value to extract contours at after the segmentation 
