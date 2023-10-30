@@ -49,7 +49,7 @@ Exemplar scripts to run every step of the workflow are provided in the Examples 
 1. SPOT_Stage3_Example-cell_tracking_challenge_dataset.py
 
 ## Pretrained Neural Network Models for organoid detection and segmentation
-We make available pretrained neural network organoid detection and segmentation models with this repo. 
+We make available pretrained neural network organoid detection and segmentation models with this repo. The segmentation model is already provided in the repo. The detection model should be downloaded and copied to the models/detect_CNN_model/ folder of this repo if you are running the example scripts.
 
 1. Organoid attention UNet segmentation model given a bounding box cropped image (this repo, models/segment_CNN_model/organoid-bbox_attn_seg-unet-master-v2_64x64-8feats_v2.h5' 
 2. [Organoid YOLOv3 bounding box detection model weights](https://www.dropbox.com/scl/fi/qzowc9s9n30zh6qdyzeqw/keras_YOLOv3_organoid_detector2.h5?rlkey=6deiqemsmcz3yin9b5dnz0e6y&dl=0)
