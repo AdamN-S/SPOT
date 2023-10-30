@@ -19,11 +19,12 @@ SPOT is associated with the following paper, which you can read for more technic
 Exemplar scripts to run every step of the workflow are provided in the Examples folder which uses the example data located in the data/ folder. This includes:
 
 **for SPOT Stage 1: video acquisition and object segmentation:**
-1. SPOT_Stage1_Step0_unmix-RGB-confocal_video.py
-2. SPOT_Stage1_Step1_detect_bbox-RGB-confocal_video.py
-3. SPOT_Stage1_Step2_track_detect_bbox-RGB-confocal_video.py
-4. SPOT_Stage1_Step3_segment_tracked_bbox-RGB-confocal_video.py
-5. SPOT_Stage1_Step4_postprocess_segment_tracked_bbox-RGB-confocal_video.py
+1. SPOT_Stage1_Step0_translation-register-RGB-confocal_video.py
+2. SPOT_Stage1_Step0_unmix-RGB-confocal_video.py
+3. SPOT_Stage1_Step1_detect_bbox-RGB-confocal_video.py
+4. SPOT_Stage1_Step2_track_detect_bbox-RGB-confocal_video.py
+5. SPOT_Stage1_Step3_segment_tracked_bbox-RGB-confocal_video.py
+6. SPOT_Stage1_Step4_postprocess_segment_tracked_bbox-RGB-confocal_video.py
 
 **for SPOT Stage 2: computation of SAM (Shape, Appearance and Motion) phenome:**
 1. SPOT_Stage2_Step1_compute_SAM_phenomes.py
