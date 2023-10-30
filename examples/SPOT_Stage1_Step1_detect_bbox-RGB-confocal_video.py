@@ -29,10 +29,13 @@ if __name__=="__main__":
     outfolder = r'C:\Users\fyz11\Documents\Work\Projects\Lu-Organoids\Paper\Suppl_GitHub_Code\test_outputs\test_detection_folder'
     outfolder = os.path.join(outfolder, basename)
     fio.mkdir(outfolder)
-    
+
+    """
+    Specify the CNN detector weights location here. Our pretrained is available and can be downloaded from dropbox. Follow the link in the README.md to download then copy to models/detect_CNN_model/
+    """
     # you should download this weights file and place it here. 
-    weightsfile = r'C:\Users\fyz11\Documents\Work\Projects\Lu-Organoids\Scripts\2022-09-07_scripts_for_keras\keras_YOLOv3_organoid_detector2.h5'
-    
+    weightsfile = r'../models/detect_CNN_model/keras_YOLOv3_organoid_detector2.h5'
+
     
     """
     Detect bounding boxes using YOLOv3 model and write straight to the output folder. 
