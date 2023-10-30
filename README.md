@@ -14,12 +14,13 @@ Three innovations drive SPOT for temporal image analysis:
 
 SPOT is provided here as a Python package to allow full flexibility. To get started, please check out exemplar scripts in the examples/ folder. We also include SPOTapp, a graphical user interface (GUI) to run SPOT stages 1 and 2. This app is currently in alpha development and is provided as-is. It will be separately developed and maintained at the following address: XXXX.   
 
-## Introduction to the SAM phenome
 <p align="center">
   <img src="https://github.com/fyz11/SPOT/blob/main/docs/pictures/SAM_motivation.jpg" width=100%/>
 </p>
+
+## Introduction to the SAM phenome
 Dynamic objects constantly change their behaviour. Motivated by observation of natural images like birds and cars, we hypothesize that three measurable properties; Shape, Appearance and Motion (SAM) provides complementary information necessary to characterize the instantaneous phenotypic state for any object.  
-##
+
 This led us to design a single generalized SAM feature set which can function similar to the single-cell transcriptome in single-cell sequencing analysis by considering in addition to shape, appearance and motion; global, (local) regional and (local) distribution features.
 
 
