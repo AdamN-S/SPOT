@@ -31,7 +31,10 @@ def translation_register_correlation(vid1,
         the translation registered input uint8 vid2map video
 
     """
-    from skimage.feature import register_translation
+    try:
+        from skimage.feature import register_translation
+    except:
+        from skimage.registration import phase_cross_correlation as register_translation
     import numpy as np 
     import cv2
     from tqdm import tqdm 
@@ -175,11 +178,12 @@ def translation_register_blurry_phase_contrast_videos(vid,
     # =============================================================================
     #       Registration 
     # =============================================================================
+    
     stacked_video_translation = translation_register_correlation(stacked_video_resize_dog,  # this is the video we use to register. 
-                                                                       stacked_video_resize, 
-                                                                       sub_pix_res=sub_pix_res,
-                                                                       impute_pixels=impute_pixels,
-                                                                       use_registered=use_registered)
+                                                                        stacked_video_resize, 
+                                                                        sub_pix_res=sub_pix_res,
+                                                                        impute_pixels=impute_pixels,
+                                                                        use_registered=use_registered)
     if apply_crop_mask:
         crop_mask = np.min(stacked_video_translation, axis=0)
             

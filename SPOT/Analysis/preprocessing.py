@@ -179,6 +179,9 @@ def kernel_dim_reduction_ECC_features(all_feats, feature_names, n_dim=100, gamma
     ECT_feats_index = np.arange(all_feats.shape[1])[np.hstack(['ECT_' in name for name in feature_names])]
     non_ECT_feats_index = np.setdiff1d(np.arange(all_feats.shape[1]), ECT_feats_index)
     
+    print(ECT_feats_index)
+    print('---')
+    
     # set up the transformer
     ECT_rbf_feature_tformer = Nystroem(n_components=n_dim, 
                                        gamma=gamma,

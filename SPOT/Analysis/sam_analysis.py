@@ -540,7 +540,7 @@ def compute_most_representative_image_patches( object_feature_module_expr,
         sample_images_modules.append(img_panel)
         
     object_SAM_module_purity_scores = np.vstack(object_SAM_module_purity_scores).T 
-    sample_images_modules = np.array(sample_images_modules) # create a standard array. 
+    sample_images_modules = np.array(sample_images_modules, dtype=object) # create a standard array. 
         
     return object_SAM_module_purity_scores, sample_images_modules, sample_object_index_modules
     
@@ -1785,22 +1785,8 @@ def fit_categoricalHMM_model_to_phenotype_cluster_label_trajectories( all_object
                 
         cost = cost.max()-cost
         
-        import pylab as plt 
-        
-        plt.figure()
-        plt.plot(X, out_decode, '.')
-        plt.show()
-        
-        plt.figure()
-        plt.imshow(cost)
-        plt.show()
-        
         in_inds, out_inds = linear_sum_assignment(cost)
     
-        print(in_inds)
-        print(out_inds)
-        print('-----')
-        
         """
         Get the fitted latent transition matrix 
         """        
