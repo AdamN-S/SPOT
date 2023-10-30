@@ -52,7 +52,7 @@ Exemplar scripts to run every step of the workflow are provided in the Examples 
 We make available pretrained neural network organoid detection and segmentation models with this repo. 
 
 1. Organoid attention UNet segmentation model given a bounding box cropped image (this repo, models/segment_CNN_model/organoid-bbox_attn_seg-unet-master-v2_64x64-8feats_v2.h5' 
-2. Organoid YOLOv3 bounding box detection model weights ([https://www.dropbox.com/scl/fi/qzowc9s9n30zh6qdyzeqw/keras_YOLOv3_organoid_detector2.h5?rlkey=6deiqemsmcz3yin9b5dnz0e6y&dl=0])
+2. [Organoid YOLOv3 bounding box detection model weights](https://www.dropbox.com/scl/fi/qzowc9s9n30zh6qdyzeqw/keras_YOLOv3_organoid_detector2.h5?rlkey=6deiqemsmcz3yin9b5dnz0e6y&dl=0)
 
 ## Documentation
 Documented API of the functions provided in this library is available as a html in the docs/build/hmtl folder. You can build up-to-date docs by going into docs/ and executing:
