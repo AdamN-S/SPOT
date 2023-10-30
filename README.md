@@ -4,14 +4,27 @@
   <img src="https://github.com/fyz11/SPOT/blob/main/docs/pictures/main_workflow.jpg" width=100%/>
 </p>
 
-## Introduction
-SPOT is a generalized and streamlined workflow for analysing object dynamics in movies. It is designed to suit high-content imaging applications where analytical tools should be push-and-go and require no prior knowledge of the expected behaviour of the objects to be studied. In other words, users should be able to run through all the steps in one go, then retrospectively interpret the produced results. This workflow is inspired by that for single-cell sequencing and is summarized in the figure above.  
+## Introduction to SPOT
+SPOT is a generalized and streamlined workflow for analysing object dynamics in movies. It is designed to suit high-content imaging applications where analytical tools should be push-and-go and require no prior knowledge of the expected behaviour of the objects to be studied. In other words, users should be able to run through all the steps in one go, then retrospectively interpret the produced results. This workflow is inspired by that for single-cell sequencing and is summarized in the figure above. 
 
+Three innovations drive SPOT for temporal image analysis:
+1. a standardized Shape, Appearance and Motion phenome - a single feature set for all objects
+2. a standardized temporal analysis of compiled SAM phenomes - minimal assumption, push-and-go
+3. automated and standardized techniques to cluster related SAM features into SAM modules for interpreting discovered phenotypes
 
-SPOT is provided here as a Python package to allow full flexibility. To get started, please check out exemplar scripts in the examples/ folder. We also include SPOTapp, a graphical user interface (GUI) to run SPOT stages 1 and 2. This app is provided as is in alpha development. It will be separately developed and maintained at the following address: XXXX.   
+SPOT is provided here as a Python package to allow full flexibility. To get started, please check out exemplar scripts in the examples/ folder. We also include SPOTapp, a graphical user interface (GUI) to run SPOT stages 1 and 2. This app is currently in alpha development and is provided as-is. It will be separately developed and maintained at the following address: XXXX.   
+
+## Introduction to the SAM phenome
+<p align="center">
+  <img src="https://github.com/fyz11/SPOT/blob/main/docs/pictures/SAM_motivation.jpg" width=80%/>
+</p>
+Dynamic objects constantly change their behaviour. Motivated by observation of natural images like birds and cars, we hypothesize that three measurable properties; Shape, Appearance and Motion (SAM) provides complementary information necessary to characterize the instantaneous phenotypic state for any object. 
+
+This led us to design a single generalized SAM feature set which can function similar to the single-cell transcriptome in single-cell sequencing analysis by considering in addition to shape, appearance and motion; global, (local) regional and (local) distribution features.
+
 
 ## Associated Paper
-SPOT is associated with the following paper, which you can read for more technical detail and get an idea of the applications SPOT enables: 
+SPOT is associated with the following paper, which you can read for more technical detail and get an idea of the many applications SPOT enables: 
 
 **Measuring and monitoring complex dynamic phenotypic heterogeneity in live-cell imaging using Shape, Appearance and Motion Phenotype Observation Tool (SPOT)**, 2023, written by Felix Y. Zhou, Brittany-Amber Jacobs, Xiaoyue Han, Adam Norton-Steele, Thomas M. Carroll, Carlos Ruiz Puig, Joseph Chadwick, Xiao Qin, Richard Lisle, Lewis Marsh, Helen M. Byrne, Heather A. Harrington, Linna Zhou and Xin Lu.
 
