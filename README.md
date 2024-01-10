@@ -48,6 +48,8 @@ Exemplar scripts to run every step of the workflow are provided in the Examples 
 **for SPOT Stage 3: analysis of SAM (Shape, Appearance and Motion) phenome:**
 1. SPOT_Stage3_Example-cell_tracking_challenge_dataset.py
 
+Each example should take around a few mins to run. The longest time is computing the SAM phenome which might take 10s of mins. 
+
 ## Pretrained Neural Network Models for organoid detection and segmentation
 We make available pretrained neural network organoid detection and segmentation models with this repo. The segmentation model is already provided in the repo. The detection model should be downloaded and copied to the models/detect_CNN_model/ folder of this repo if you are running the example scripts.
 
@@ -61,7 +63,7 @@ make html
 ```
 
 ## To install
-The package can be installed using pip:
+The package can be installed automatically using pip. It has been tested for Python >=3.8. Installation time in mins :
 ```shell
 pip install .
 ```
