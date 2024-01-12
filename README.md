@@ -50,6 +50,9 @@ Exemplar scripts to run every step of the workflow are provided in the Examples 
 
 Each example should take around a few mins to run. The longest time is computing the SAM phenome which might take 10s of mins. 
 
+## SPOTapp
+In parallel to the scripts, we provide an alpha version of a GUI to run SPOT called SPOTapp. You can find download instructions in the file SPOTapp.md. Instructions to use the software can also be found at the download link.
+
 ## Pretrained Neural Network Models for organoid detection and segmentation
 We make available pretrained neural network organoid detection and segmentation models with this repo. The segmentation model is already provided in the repo. The detection model should be downloaded and copied to the models/detect_CNN_model/ folder of this repo if you are running the example scripts.
 
