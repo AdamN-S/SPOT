@@ -1,4 +1,4 @@
-
+import numpy as np 
 
 def spectral_unmix_RGB(img, n_components=3, alpha=1., l1_ratio=0.5):
     """ Spectrally unmixes an RGB image based on non-negative matrix factorization using the method of skimage.decomposition. Assumes uint8 RGB image.
@@ -145,3 +145,99 @@ def spectral_unmix_RGB_video(vid, alpha=1, l1_ratio=.5):
 
     return unmixed_vid_out
 
+
+def normalize_mi_ma(x, mi, ma, clip=False, eps=1e-20, dtype=np.float32):
+	r""" Linear image intensity rescaling based on the given minimum and maximum intensities, with optional clipping
+	
+	The new intensities will be 
+
+	.. math::
+		x_{new} = \frac{x-\text{mi}}{\text{ma}-\text{mi} + \text{eps}}
+		
+	Parameters
+	----------
+	x : nd array
+		arbitrary n-dimensional image
+	mi : scalar
+		minimum intensity value 
+	ma : scalar
+		maximum intensity value 
+	clip : bool
+		whether to clip the transformed image intensities to [0,1] 
+	eps : scalar
+		small number for numerical stability 
+	dtype : np.dtype
+		if not None, casts the input x into the specified dtype 
+
+	Returns
+	-------
+	x : nd array
+		normalized output image of the same dimensionality as the input image
+
+	"""
+	if dtype is not None:
+		x   = x.astype(dtype,copy=False)
+		mi  = dtype(mi) if np.isscalar(mi) else mi.astype(dtype,copy=False)
+		ma  = dtype(ma) if np.isscalar(ma) else ma.astype(dtype,copy=False)
+		eps = dtype(eps)
+	try:
+		import numexpr
+		x = numexpr.evaluate("(x - mi) / ( ma - mi + eps )")
+	except ImportError:
+		x =                   (x - mi) / ( ma - mi + eps )
+	if clip:
+		x = np.clip(x,0,1)
+	return x
+
+def normalize(x, pmin=2, pmax=99.8, axis=None, clip=False, eps=1e-20, dtype=np.float32):
+	r""" Percentile-based image normalization, same as :func:`unwrap3D.Image_Functions.image.imadust` but exposes more flexibility in terms of axis selection and optional clipping. 
+
+	Parameters
+	----------
+	x : nd array
+		arbitrary n-dimensional image
+	pmin : scalar
+		lower percentile of intensity, specified as a number in the range 0-100. All intensities in a lower percentile than p1 will be mapped to 0.
+	pmax : scalar
+		upper percentile of intensity, specified as a number in the range 0-100. All intensities in the upper percentile than p2 will be mapped to the maximum value of the data type.
+	axis : int
+		if not None, compute the percentiles restricted to the specified axis, otherwise they will be based on the statistics of the whole image.
+	clip : bool
+		whether to clip to the maximum and minimum of [0,1] for float32 or float64 data types.    
+	eps : scalar
+		small number for numerical stability 
+	dtype : np.dtype
+		if not None, casts the input x into the specified dtype 
+
+	Returns
+	-------
+	x_out : nd array
+		normalized output image of the same dimensionality as the input image
+
+	"""
+	mi = np.percentile(x,pmin,axis=axis,keepdims=True)
+	ma = np.percentile(x,pmax,axis=axis,keepdims=True)
+
+	x_out = normalize_mi_ma(x, mi, ma, clip=clip, eps=eps, dtype=dtype)
+	return x_out
+
+
+def get_img_contours(img, thresh=100, n_boundary_pts=100, return_original=False): 
+    
+    from skimage.measure import find_contours
+    from scipy.ndimage.morphology import binary_fill_holes
+    from skimage.morphology import binary_dilation, square
+    
+    binary = img > thresh
+    binary = binary_fill_holes(binary)
+    binary = binary_dilation(binary, square(3))
+    binary_cont = find_contours(binary,0)
+    binary_cont = binary_cont[np.argmax([len(l) for l in binary_cont])]
+    
+    binary_cont_resample = resample_curve(binary_cont[:,1], 
+                                          binary_cont[:,0], k=1, s=0, n_samples=n_boundary_pts)
+    
+    if return_original:
+        return binary_cont_resample, binary_cont[...,[1,0]]
+    else:
+        return binary_cont_resample

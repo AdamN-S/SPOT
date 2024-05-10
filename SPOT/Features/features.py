@@ -432,6 +432,40 @@ def _shape_context_core(dists, angles, n_dist=10, n_theta=16):
 # =============================================================================
 #     geometrical manipulation helper functions
 # =============================================================================
+
+def _resample_curve(x,y,k=1, s=0, n_samples=10):
+    
+    import scipy.interpolate
+    
+    tck, u = scipy.interpolate.splprep([x,y], k=k, s=s)
+    unew = np.linspace(0, 1.00, n_samples)
+    out = scipy.interpolate.splev(unew, tck) 
+    
+    return np.vstack(out).T
+
+def get_img_contours(img, thresh=0, n_boundary_pts=100, return_original=False): 
+    
+    from skimage.measure import find_contours
+    from scipy.ndimage.morphology import binary_fill_holes
+    from skimage.morphology import binary_dilation, square
+    
+    binary = img > thresh
+    binary = binary_fill_holes(binary)
+    binary = binary_dilation(binary, square(3))
+    binary_cont = find_contours(binary,0)
+    binary_cont = binary_cont[np.argmax([len(l) for l in binary_cont])]
+    
+    binary_cont_resample = _resample_curve(binary_cont[:,0], 
+                                           binary_cont[:,1], k=1, s=0, n_samples=n_boundary_pts)
+    
+    # must be (y,x) convention 
+    if return_original:
+        return binary_cont_resample, binary_cont#[...,[1,0]]
+    else:
+        return binary_cont_resample
+
+
+
 def _rotate_pts(pts, angle=0, center=[0,0]):
 
     angle_rads = angle / 180. * np.pi
@@ -649,7 +683,8 @@ def extract_binary_regionprops(binary, pixel_xy_res=1.):
     zernike_moment_labels = np.hstack(['zernike_moments_%s' %(str(h_ii+1)) for h_ii in range(len(moments_zernike))])
 
     feats_norm = np.hstack([4*np.pi*regprop.area/(regprop.perimeter**2.), # dimensionless
-                            regprop.major_axis_length / regprop.minor_axis_length, # dimensionless
+                            # np.abs(regprop.major_axis_length) / (np.abs(regprop.minor_axis_length)+1.), # dimensionless
+                            regprop.major_axis_length / (regprop.minor_axis_length+1.), # dimensionless
                             regprop.eccentricity,
                             regprop.solidity,
                             regprop.extent,

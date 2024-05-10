@@ -412,7 +412,8 @@ def compile_boundaries_arrays(expt,
                               channels_sep=',', 
                                patients_sep='+', 
                                conditions_sep='+', 
-                              genetics_sep='+'):
+                              genetics_sep='+',
+                              grayscale=False):
     
     r""" For the extracted object boundaries of a given video and the global metadata for the dataset this video was part of, this function uses the global metadata to annotate the object boundaries.
     
@@ -432,7 +433,8 @@ def compile_boundaries_arrays(expt,
         videos may have objects subject to different treatments for multichannels. the Conditions column of the metadata table is used to specify the treatment condition for each video channel and this should be indicated with a delimiter. the delimiter defaults to '+'
     genetics_sep : str
         videos may have objects of different genotype for multichannels. the Genetics column of the metadata table is used to specify the genotype for each video channel and this should be indicated with a delimiter. the delimiter defaults to '+'
-   
+    grayscale : bool
+        specify if video is single channel. 
     
     Returns
     -------
@@ -448,20 +450,31 @@ def compile_boundaries_arrays(expt,
     select_meta = np.arange(len(org_expt_table))[org_expt_table['Filename'].values == expt][0]
     meta_info = org_expt_table.loc[select_meta]
     
-    # parse channels
-    # parse the genotypes and channel information.
-    expt_channels = meta_info['Img_Channel']
-    # check it is integer or str
-    expt_channels_result = isinstance(expt_channels, np.int64)
+    ## parse channels
+    ## parse the genotypes and channel information.
+    #expt_channels = meta_info['Img_Channel']
+    ## check it is integer or str
+    #expt_channels_result = isinstance(expt_channels, np.int64)
     
-    if expt_channels_result:
-        expt_channels = np.hstack([int(expt_channels)])
-    else:
-        if channels_sep in expt_channels:
-            expt_channels = expt_channels.split(channels_sep)
-            expt_channels = np.hstack([int(ch) for ch in expt_channels])
-        else:
+    if not grayscale:
+        # parse channels
+        # parse the genotypes and channel information.
+        expt_channels = meta_info['Img_Channel']
+        # check it is integer or str
+        expt_channels_result = isinstance(expt_channels, np.int64)
+        
+        # print(expt_channels_result)
+        
+        if expt_channels_result:
             expt_channels = np.hstack([int(expt_channels)])
+        else:
+            if channels_sep in expt_channels:
+                expt_channels = expt_channels.split(channels_sep)
+                expt_channels = np.hstack([int(ch) for ch in expt_channels])
+            else:
+                expt_channels = np.hstack([int(expt_channels)])
+    else:
+        expt_channels = np.hstack([1])
      
     # parse genetics 
     genotype_channels = meta_info['Genetics']
@@ -559,6 +572,9 @@ def compile_boundaries_arrays(expt,
     
     boundaries_all_export = [] 
     
+    if grayscale:
+        boundaries = [boundaries]
+    
     for channel_ii, boundaries_channel in enumerate(boundaries):
         # -> iterate over channels.
 #        print(boundaries_channel.shape)
@@ -628,7 +644,8 @@ def construct_metrics_table_csv(expt,
                                 channels_sep=',', 
                                  patients_sep='+', 
                                  conditions_sep='+', 
-                                genetics_sep='+'):
+                                genetics_sep='+',
+                                grayscale=False):
     r""" For the SAM phenome of a given video and the global metadata for the dataset this video was part of, this function produces a table output using the global metadata to annotate this video, so it can be compiled into one large table.
     
     Parameters
@@ -649,7 +666,8 @@ def construct_metrics_table_csv(expt,
         videos may have objects subject to different treatments for multichannels. the Conditions column of the metadata table is used to specify the treatment condition for each video channel and this should be indicated with a delimiter. the delimiter defaults to '+'
     genetics_sep : str
         videos may have objects of different genotype for multichannels. the Genetics column of the metadata table is used to specify the genotype for each video channel and this should be indicated with a delimiter. the delimiter defaults to '+'
-   
+    grayscale : bool
+        specify if video is single channel. 
     
     Returns
     -------
@@ -664,19 +682,22 @@ def construct_metrics_table_csv(expt,
     select_meta = np.arange(len(org_expt_table))[org_expt_table['Filename'].values == expt][0]
     meta_info = org_expt_table.loc[select_meta]
     
-    # parse the genotypes and channel information.
-    expt_channels = meta_info['Img_Channel']
-    # check it is integer or str
-    expt_channels_result = isinstance(expt_channels, np.int64)
-    
-    if expt_channels_result:
-        expt_channels = np.hstack([int(expt_channels)])
-    else:
-        if channels_sep in expt_channels:
-            expt_channels = expt_channels.split(channels_sep)
-            expt_channels = np.hstack([int(ch) for ch in expt_channels])
-        else:
+    if not grayscale:
+        # parse the genotypes and channel information.
+        expt_channels = meta_info['Img_Channel']
+        # check it is integer or str
+        expt_channels_result = isinstance(expt_channels, np.int64)
+        
+        if expt_channels_result:
             expt_channels = np.hstack([int(expt_channels)])
+        else:
+            if channels_sep in expt_channels:
+                expt_channels = expt_channels.split(channels_sep)
+                expt_channels = np.hstack([int(ch) for ch in expt_channels])
+            else:
+                expt_channels = np.hstack([int(expt_channels)])
+    else:
+        expt_channels = np.hstack([1])
         
     # parse genetics 
     genotype_channels = meta_info['Genetics']
@@ -751,7 +772,9 @@ def construct_metrics_table_csv(expt,
     all_data = []
     metrics_names = [name.strip() for name in metricslabels]
     
-    print(genotype_channels, expt_channels)
+    if grayscale:
+
+        metrics = [metrics]
     
     for channel_ii, metrics_channel in enumerate(metrics):
         

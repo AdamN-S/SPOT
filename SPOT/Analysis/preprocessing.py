@@ -36,7 +36,7 @@ def scale_normalize_curvature_features(all_feats, feature_names):
     
     
 # remove entirely zero-valued features
-def remove_zero_features(all_feats, feature_names):
+def remove_zero_features(all_feats, feature_names, return_index=False):
     r""" remove any features that are zero-valued across all object instances as well as any that have zero standard deviation across all object instances as they are uninformative 
     
     Parameters
@@ -58,18 +58,65 @@ def remove_zero_features(all_feats, feature_names):
     
     zero_feats = np.nanmax(all_feats, axis=0) == 0    
         
+    if return_index:
+        select_index = np.arange(len(zero_feats))
+        select_index = select_index[~zero_feats].copy()
+        
     feature_names_corrected = feature_names[~zero_feats].copy()
     all_feats_corrected = all_feats[:, ~zero_feats].copy() 
     
     std_feats = np.std(all_feats_corrected, axis=0)
     zero_std_feats = std_feats == 0
     
+    if return_index:
+        select_index = select_index[~zero_std_feats].copy()
+        
     feature_names_corrected = feature_names_corrected[~zero_std_feats]
     all_feats_corrected = all_feats_corrected[:, ~zero_std_feats].copy() # so we have 400 feats. 
     
-    return all_feats_corrected, feature_names_corrected
+    if return_index:
+        return all_feats_corrected, feature_names_corrected, select_index
+    else:
+        return all_feats_corrected, feature_names_corrected
+
+
+# remove entirely zero-valued features
+def remove_nan_variance_features(all_feats, feature_names, return_index=False):
+    r""" remove any features that have zero variation across all object instances as well as any that have zero standard deviation across all object instances as they are uninformative 
     
-def remove_high_variance_features(all_feats, feature_names, variance_threshold_sigma=3):
+    Parameters
+    ----------
+    all_feats : (n_objects, n_feats) np.array
+        numpy array of all features for all object instances to be analyzed. 
+    feature_names : (n_feats,) np.array
+        numpy array of the names of each computed feature
+    
+    Returns
+    -------
+    all_feats_corrected : (n_objects, n_feats) np.array
+        numpy array of all features with zero-valued features removed
+    feature_names_corrected : (n_feats,) np.array
+        numpy array of the names of each retained feature
+    
+    """
+    import numpy as np 
+    
+    zero_feats = np.isnan(np.std(all_feats, axis=0))     
+        
+    if return_index:
+        select_index = np.arange(len(zero_feats))
+        select_index = select_index[~zero_feats].copy()
+    
+    feature_names_corrected = feature_names[~zero_feats].copy()
+    all_feats_corrected = all_feats[:, ~zero_feats].copy() 
+    
+    if return_index:
+        return all_feats_corrected, feature_names_corrected, select_index
+    else:
+        return all_feats_corrected, feature_names_corrected
+
+    
+def remove_high_variance_features(all_feats, feature_names, variance_threshold_sigma=3, return_index=False):
     r""" remove features that are highly variable and likely to represent outliers
     
     Parameters
@@ -92,13 +139,19 @@ def remove_high_variance_features(all_feats, feature_names, variance_threshold_s
     high_var_feats_thresh = np.mean(np.std(all_feats, axis=0)) + variance_threshold_sigma*np.std(np.std(all_feats, axis=0))
     keep_feats = np.std(all_feats, axis=0)<=high_var_feats_thresh
     
+    if return_index:
+        select_index = np.arange(len(keep_feats))
+        select_index = select_index[keep_feats].copy()
     # high_var_feats_thresh = np.mean(np.std(all_feats, axis=0)) + 2*np.std(np.std(all_feats, axis=0))
     # feature_names = feature_names[np.std(all_feats, axis=0)<=high_var_feats_thresh]
     
     feature_names_corrected = feature_names[keep_feats].copy()
     all_feats_corrected = all_feats[:, keep_feats].copy() 
         
-    return all_feats_corrected, feature_names_corrected
+    if return_index:
+        return all_feats_corrected, feature_names_corrected, select_index
+    else:
+        return all_feats_corrected, feature_names_corrected
 
 
 def select_time_varying_features(all_feats, feature_names, all_time, ridge_alpha=1., norm_time=True):
@@ -152,7 +205,7 @@ def select_time_varying_features(all_feats, feature_names, all_time, ridge_alpha
     return all_feats_corrected, feature_names_corrected, coeffs
 
 
-def kernel_dim_reduction_ECC_features(all_feats, feature_names, n_dim=100, gamma=None, random_state=1):
+def kernel_dim_reduction_ECC_features(all_feats, feature_names, n_dim=100, gamma=None, random_state=1, return_index=False):
     r""" finds Euler Characteristic Curve features and using Nystroem with RBF kernel to perform dimensional reduction to the specified dimension size. 
     
     Parameters
@@ -178,9 +231,7 @@ def kernel_dim_reduction_ECC_features(all_feats, feature_names, n_dim=100, gamma
     # drop all ECC/ECT feats
     ECT_feats_index = np.arange(all_feats.shape[1])[np.hstack(['ECT_' in name for name in feature_names])]
     non_ECT_feats_index = np.setdiff1d(np.arange(all_feats.shape[1]), ECT_feats_index)
-    
-    print(ECT_feats_index)
-    print('---')
+
     
     # set up the transformer
     ECT_rbf_feature_tformer = Nystroem(n_components=n_dim, 
@@ -198,8 +249,45 @@ def kernel_dim_reduction_ECC_features(all_feats, feature_names, n_dim=100, gamma
     feature_names_corrected = np.hstack([feature_names_corrected,
                                          ['ECT_rbf_%d'%(dd+1) for dd in np.arange(ECT_rbf_feats.shape[1])]])
     
-    return all_feats_corrected, feature_names_corrected, ECT_rbf_feature_tformer
+    if return_index:
+        return all_feats_corrected, feature_names_corrected, ECT_rbf_feature_tformer, (non_ECT_feats_index, ECT_feats_index)    
+    else:
+        return all_feats_corrected, feature_names_corrected, ECT_rbf_feature_tformer
     
+    
+def kernel_dim_reduction_ECC_features_with_transform(all_feats, indices, ECT_rbf_feature_tformer):
+    r""" finds Euler Characteristic Curve features and using Nystroem with RBF kernel to perform dimensional reduction to the specified dimension size. 
+    
+    Parameters
+    ----------
+    all_feats : (n_objects, n_feats) np.array
+        numpy array of all features for all object instances to be analyzed. 
+    indices : ((M,), (N,)) np.array
+        non ECC features index, ECC features index
+    ECT_rbf_feature_tformer : Scikit-learn Nystroem transformer object
+        the fitted sklearn.kernel_approximation.Nystroem object
+    
+    Returns
+    -------
+    all_feats_corrected : (n_objects, n_feats) np.array
+        numpy array of all features with transformed kernel ECC features
+        
+    """
+    import numpy as np 
+    
+    non_ECT_feats_index, ECT_feats_index = indices
+    
+    ECT_rbf_feats = ECT_rbf_feature_tformer.transform(all_feats[:,ECT_feats_index])
+    
+    # now modify 
+    all_feats_corrected = all_feats[:,non_ECT_feats_index].copy() # keep as before. 
+    
+    # add in the transformed kernel features.
+    all_feats_corrected = np.hstack([all_feats_corrected, 
+                                     ECT_rbf_feats])
+    
+    return all_feats_corrected
+
     
     
 # individual feature normalization. 

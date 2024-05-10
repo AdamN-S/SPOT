@@ -148,7 +148,10 @@ def hierarchical_cluster_features_into_SAM_modules(all_feats,
                                                    p_smooth=0.5, 
                                                    niter_smooth=10,
                                                    min_peak_distance=5,
-                                                   debugviz=False):
+                                                   max_clust_len = 25,
+                                                   buffer=30,
+                                                   debugviz=False,
+                                                   savefile=None):
 
     r""" Use automatic hierarchical clustering to group individual features into modules based on their covariation within the dataset
     
@@ -178,6 +181,8 @@ def hierarchical_cluster_features_into_SAM_modules(all_feats,
         the minimum spacing in terms of number of cluster between peaks in the davies_bouldin_score used to evaluate the number of SAM modules 
     debugviz=False
         if True, plots the graph of #SAM modules vs davies_bouldin_score
+    savefile : str 
+        save path 
     
     Returns
     -------
@@ -185,6 +190,8 @@ def hierarchical_cluster_features_into_SAM_modules(all_feats,
         the seaborn clustermap object, where features have been clustered by their pairwise Pearsons correlation matrix 
     final_feature_clusters : (n_features,) array
         an integer array where each feature has been assigned to a distinct SAM module. Each unique integer is a distinct SAM module
+    features_clusters_colorbar : (n_features, 3) array 
+        colorbar, in the order of clustermap g, to help draw the cluster boundaries. 
     final_feature_names_clusters : list
         the names of each feature assigned to each SAM module. SAM module is ordered in terms of increasing integer id. 
     final_feature_names_ids : list
@@ -198,6 +205,9 @@ def hierarchical_cluster_features_into_SAM_modules(all_feats,
     from sklearn.metrics.pairwise import pairwise_distances
     from sklearn.metrics import davies_bouldin_score
     from scipy.signal import find_peaks
+    from tqdm import tqdm 
+    import time 
+    
 
     if feature_type is None or feature_scope is None:
         feature_type, feature_scope = get_SAM_feature_type(feature_names)    
@@ -221,21 +231,36 @@ def hierarchical_cluster_features_into_SAM_modules(all_feats,
     SAM_colors = pd.Series(feature_type, index=df.columns).map(SAM_lut)
     spatial_colors = pd.Series(feature_scope, index=df.columns).map(spatial_lut)
 
+    
+    # t1 = time.time()
+    df_corr = pd.DataFrame(1.-pairwise_distances(all_feats.T, metric='correlation', n_jobs=-1),
+                           index = feature_names,
+                           columns = feature_names)
+    # t2 = time.time()
+    # print('finished correlation', t2-t1)
+    
     # hcluster. 
-    g=sns.clustermap(df.corr(), 
-                     cmap=hcluster_heatmap_color, 
-                     method=hcluster_method, # use average or maybe complete. 
-                     metric=hcluster_metric,
-                     vmin=-1, 
-                     vmax=1, 
-                     col_colors=[SAM_colors, spatial_colors])
+    g=sns.clustermap(#df.corr(), # this is too slow
+                     df_corr,
+                      cmap=hcluster_heatmap_color, 
+                      method=hcluster_method, # use average or maybe complete. 
+                      metric=hcluster_metric,
+                      vmin=-1, 
+                      vmax=1, 
+                      col_colors=[SAM_colors, spatial_colors])
     g.ax_row_dendrogram.remove()
     
     # # g.ax_cbar.remove()
     # # g.ax_heatmap.xaxis.set_ticks(np.arange(len(g.dendrogram_col.reordered_ind))+.5)
     # # g.ax_heatmap.xaxis.set_ticklabels(g.dendrogram_col.reordered_ind)
-    # g.savefig(os.path.join(saveplotsfolder_cells, 'UMAP_SAM_modules_dendrogram_cluster-average.svg'), 
-    #           bbox_inches='tight', pad_inches=0, dpi=300)
+    
+    if savefile is not None:
+        # g.savefig(os.path.join(saveplotsfolder_cells, 'UMAP_SAM_modules_dendrogram_cluster-average.svg'), 
+                  # bbox_inches='tight', pad_inches=0, dpi=300)
+        g.savefig(savefile, 
+                  bbox_inches='tight',
+                  pad_inches=0, 
+                  dpi=300)
     # # # # ax.set_aspect(1)
     
     # # get the correlation matrix. 
@@ -248,38 +273,45 @@ def hierarchical_cluster_features_into_SAM_modules(all_feats,
     
     # set the min detected length ...  --- we shouldn't scan to the max i assume..... 
     min_cluster_len = 1
-    max_clust_len = 2 + np.arange(len(cluster_formation_cols_break_pts_len))[cluster_formation_cols_break_pts_len==min_cluster_len][1] # tolerate the 2nd ? 
     
+    max_clust_len_ref = 2 + np.arange(len(cluster_formation_cols_break_pts_len))[cluster_formation_cols_break_pts_len==min_cluster_len][1] # tolerate the 2nd ? 
+
+    # print(max_clust_len_ref)
+    if max_clust_len is None:
+        max_clust_len = 2 + np.arange(len(cluster_formation_cols_break_pts_len))[cluster_formation_cols_break_pts_len==min_cluster_len][1] # tolerate the 2nd ? 
+    # else:
+        
     """
     Automated clustering 
     """
     # print('maximum # clusters', max_clust_len)
     # homogeneity = []
     labels_all = []
-    corr_all = []
+    # corr_all = []
     scores_all = [] # clustering scores. 
     # sil_scores_all = []
     
     # then use this to scan the max.... -> we know each step adds a cluster. 
-    for link_ii in np.arange(2, len(g.dendrogram_col.calculated_linkage))[:max_clust_len+30]:
+    for link_ii in tqdm(np.arange(2, len(g.dendrogram_col.calculated_linkage))[:max_clust_len+buffer]): # give a smaller buffer?
         lab = fcluster(g.dendrogram_col.calculated_linkage, 
                         t=g.dendrogram_col.calculated_linkage[-link_ii-1,2], 
                         criterion='distance', depth=2, R=None, monocrit=None)
         labels_all.append(lab)
         # print(link_ii, len(np.unique(lab)))
         
-        # lab gives the unique cluster labellings.
-        # now we go through the partitioning and get the mean intra-cluster correlations.
-        label_intra_vals = [df.values[:,lab==lab_uniq].T for lab_uniq  in np.unique(lab)]
-        label_intra_corr = [1.-pairwise_distances(val, metric='correlation') for val in label_intra_vals] # should be the inverse (double check)
-        label_intra_corr = [np.nanmean(val - np.diag(np.ones(len(val)))) for val in label_intra_corr]
+        # # print()
+        # # # lab gives the unique cluster labellings.
+        # # # now we go through the partitioning and get the mean intra-cluster correlations.
+        # label_intra_vals = [df.values[:,lab==lab_uniq].T for lab_uniq  in np.unique(lab)]
+        # # label_intra_corr = [1.-pairwise_distances(val, metric='correlation') for val in label_intra_vals] # is this val.T? # should be the inverse (double check)
+        # # label_intra_corr = [np.nanmean(val - np.diag(np.ones(len(val)))) for val in label_intra_corr]
         
-        mean_score = np.nanmean(label_intra_corr)
-        corr_all.append(mean_score)   ##### this will of course always decrease... we need a better clustering. 
+        # # mean_score = np.nanmean(label_intra_corr)
+        # # corr_all.append(mean_score)   ##### this will of course always decrease... we need a better clustering. 
         
-        
-        # sil_scores_all.append(calinski_harabasz_score(df.T, lab))
-        scores_all.append(davies_bouldin_score(df.corr(), lab)) # this actually looks good. 
+        # # sil_scores_all.append(calinski_harabasz_score(df.T, lab))
+        # scores_all.append(davies_bouldin_score(df.corr(), lab)) # do not recompute! 
+        scores_all.append(davies_bouldin_score(df_corr.values, lab))
         # sil_scores_all.append(silhouette_score(df.corr(), lab))
         # print([np.arange(len(cluster_ids))[lab==lab_uniq] for lab_uniq in np.unique(lab)])
         
@@ -289,9 +321,9 @@ def hierarchical_cluster_features_into_SAM_modules(all_feats,
         # homogeneity.append(np.min(max_p))
         # print('===')
         
-    # try and separate out the clustering based on this. 
-    labels_all = np.vstack(labels_all)
-    corr_all = np.hstack(corr_all)
+    # # try and separate out the clustering based on this. 
+    # labels_all = np.vstack(labels_all)
+    # corr_all = np.hstack(corr_all)
     scores_all = np.hstack(scores_all)
     # sil_scores_all = np.hstack(sil_scores_all)
     
@@ -302,6 +334,17 @@ def hierarchical_cluster_features_into_SAM_modules(all_feats,
                                       lam=lam_smooth, 
                                       p=p_smooth, 
                                       niter=niter_smooth)
+    
+    
+    # plot this. 
+    if debugviz:
+        plt.figure(figsize=(5,5))
+        plt.plot(np.arange(len(labels_all))+2, scores_all,'k', lw=2)
+        plt.plot(np.arange(len(labels_all))+2, scores_all_smooth,'g--', lw=2)
+        plt.tick_params(length=10, right=True)
+        plt.ylabel('Mean Score')
+        plt.xlabel('# Modules')
+        plt.show()
     
     """
     Use peaks
@@ -344,7 +387,56 @@ def hierarchical_cluster_features_into_SAM_modules(all_feats,
     # # save out the table.
     # features_clusters_table = pd.DataFrame(features_clusters_table, 
     #                                        columns=['Module_%s' %(str(kkk).zfill(3)) for kkk in np.arange(len(N_features_clusters))])
-    return g, final_feature_clusters, final_feature_names_clusters, final_feature_names_ids  #, features_clusters_table
+    
+    
+    """
+    reparse clusters to be in the same order as the dendrogram ordering. 
+    """
+    dendrogram_clusters_order = final_feature_clusters[g.dendrogram_col.reordered_ind]
+    dendrogram_order = []
+    
+    for ii in np.arange(len(dendrogram_clusters_order)):
+        if len(dendrogram_order)>0:
+            if dendrogram_clusters_order[ii]!=dendrogram_order[-1]:
+                dendrogram_order.append(dendrogram_clusters_order[ii])
+        else:
+            dendrogram_order.append(dendrogram_clusters_order[ii])
+    
+    # the above is the present order.. which should not be reordered.
+    final_feature_clusters_new = np.zeros_like(final_feature_clusters);
+    final_feature_names_clusters_new = []
+    final_feature_names_ids_new = []
+    
+    for ii, clust_ii in enumerate(dendrogram_order):
+    
+        final_feature_clusters_new[final_feature_clusters==clust_ii] = ii+1
+        final_feature_names_clusters_new.append(final_feature_names_clusters[clust_ii-1])
+        final_feature_names_ids_new.append(final_feature_names_ids[clust_ii-1])
+        
+    final_feature_clusters = final_feature_clusters_new.copy()
+    final_feature_names_clusters = list(final_feature_names_clusters_new)
+    final_feature_names_ids = list(final_feature_names_ids_new)
+    
+    """
+    Get the clusters! ( by colorbar ) in dendrogram order... 
+    """
+    features_clusters_colors = sns.color_palette('Spectral', len(final_feature_names_ids))
+    features_clusters_colors = np.vstack(features_clusters_colors)
+    features_clusters_colorbar = np.zeros((df.shape[-1], 3))
+    len_features_clusters = [len(cc) for cc in final_feature_names_ids]
+    len_features_clusters_cumsum = np.hstack([0,np.cumsum(len_features_clusters)])
+    # features_clusters_dendrogram_order = final_feature_clusters[g.dendrogram_col.reordered_ind]
+    
+    for kk in np.arange(len(final_feature_names_ids)):    
+        # # data = final_feature_names_ids[kk]
+        features_clusters_colorbar[len_features_clusters_cumsum[kk]:
+                                    len_features_clusters_cumsum[kk+1]] = features_clusters_colors[kk][None,:].copy()
+        # features_clusters_colorbar[features_clusters_dendrogram_order==kk+1] = features_clusters_colors[kk][None,:].copy()
+    
+    
+    return g, final_feature_clusters, features_clusters_colorbar, final_feature_names_clusters, final_feature_names_ids  #, features_clusters_table
+    
+    # return []
 
     # features_clusters_table.to_csv(os.path.join(saveplotsfolder_cells, 
                                                 # 'SAM_hcluster_modules.csv'), index=None)
@@ -1095,7 +1187,7 @@ def compute_heatmap_density_image_Embedding(lower_dimension_pts_2D,
         
         if saveplotsfolder is not None:
             plt.savefig(os.path.join(saveplotsfolder,
-                                     unique_conditions[cond_ii]+'_heatmap_density_embedding.svg'), bbox_inches='tight')
+                                     str(unique_conditions[cond_ii])+'_heatmap_density_embedding.svg'), bbox_inches='tight')
         plt.show()
         
     all_pts_density_select = np.vstack(all_pts_density_select)
@@ -1749,6 +1841,7 @@ def fit_categoricalHMM_model_to_phenotype_cluster_label_trajectories( all_object
     all_uniq_cluster_labels = np.unique(all_cluster_labels)
     
     all_models = []
+    all_reorder = []
     
     for condition_ii in np.arange(len(all_object_label_trajectories)):
         
@@ -1804,9 +1897,10 @@ def fit_categoricalHMM_model_to_phenotype_cluster_label_trajectories( all_object
         Q_array = Q_table.copy()
         
         all_models.append([Q_array, hmm_model])
+        all_reorder.append(reorder)
         
         
-    return all_models
+    return all_models, all_reorder
 
 
 def construct_obj_traj_from_uniq_obj_ids(all_obj_uniq_row_ids, 
