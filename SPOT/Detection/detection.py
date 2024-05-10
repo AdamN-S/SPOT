@@ -401,10 +401,26 @@ def load_and_run_YOLOv3_weights_keras_detection_model_RGB(vid,
             # frame_file = os.path.join(temp_vid_dir, 'Frame_%s.jpg' %(str(i).zfill(4)))
 #                frame_img = vid[i,...,channel].copy()
             frame_img = vid_ch[i].copy()
-            frame_img = sktform.resize(frame_img, output_shape=imsize, order=1, preserve_range=True)
+            
+            
+            """
+            track the original size. 
+            """
+            image_h_original, image_w_original = frame_img.shape[:2]
+            
+            
+            """
+            this should be the original image
+            """
             frame_img_viz = frame_img.copy()
             frame_img_viz = np.uint8(255*skexposure.rescale_intensity(frame_img_viz*1.))
-            frame_img_viz = np.dstack([frame_img_viz, frame_img_viz, frame_img_viz])
+            frame_img_viz = np.dstack([frame_img_viz, frame_img_viz, frame_img_viz]) # make RGB. 
+            
+            """
+            resize to run the YOLO network. 
+            """
+            frame_img = sktform.resize(frame_img, output_shape=imsize, order=1, preserve_range=True) # resize to the size the network expects. 
+            
             if equalize_hist:
                 frame_img = skexposure.equalize_hist(frame_img) # equalize hist 
             frame_img = np.dstack([frame_img,frame_img,frame_img]) # make RGB.
@@ -437,9 +453,30 @@ def load_and_run_YOLOv3_weights_keras_detection_model_RGB(vid,
             _do_nms(boxes, nms_thresh)     
             
             detect_bboxes = _get_bboxes(boxes, class_labels, obj_thresh=obj_thresh)
-            # print(np.max(frame_img_viz))
-            bbox_img = _draw_bbox(frame_img_viz, detect_bboxes, class_labels, cmap) # draw the 
-            # print(np.max(bbox_img))
+            
+            
+            # get the correct scaling. 
+            ### the detection is now correct. # can we correct for the rescaling. 
+            scale_x = image_w_original / image_w
+            scale_y = image_h_original / image_h
+            
+            
+            # apply the scaling. 
+            detect_bboxes_new = []
+            for det in detect_bboxes:
+                last = np.hstack(det[-1])
+                
+                last[0] *= scale_x
+                last[1] *= scale_y
+                last[2] *= scale_x
+                last[3] *= scale_y
+                
+                det[-1] = list(last) 
+                
+                detect_bboxes_new.append(det)
+            
+            bbox_img = _draw_bbox(frame_img_viz, detect_bboxes_new, class_labels, cmap) # draw the 
+            
             # # draw bounding boxes on the image using labels
             # draw_boxes(frame_img, boxes, class_labels, obj_thresh=0.01)  # ok we get bounding boxes out..... though this will be slightly different ... o boy ... 
             if debug_viz:
@@ -451,9 +488,9 @@ def load_and_run_YOLOv3_weights_keras_detection_model_RGB(vid,
             skio.imsave(os.path.join(pred_folder, 'bbox_frame_%s_Ch-%s.jpg' %(str(i).zfill(4), str(channel+1).zfill(2))), bbox_img)
                 
             """
-            Write out the bounding box files for each time point. 
+            Write out the bounding box files for each time point in yolo format. 
             """
             outboxfile = os.path.join(pred_folder, 'bbox_predictions_%s_Ch-%s.txt' %(str(i).zfill(4), str(channel+1).zfill(2)))
-            write_bbox_files(outboxfile, detect_bboxes)
+            write_bbox_files(outboxfile, detect_bboxes_new)
     
     return []
