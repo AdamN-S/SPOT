@@ -73,10 +73,10 @@ if __name__=="__main__":
         
     
     # =============================================================================
-    #   Perform the registration. 
+    #   Perform the registration, and return the computed displacement at each timepoint.
     # =============================================================================
     
-    stacked_video_translation, blurred_frames = SPOT_register.translation_register_blurry_phase_contrast_videos(np.uint8(255*vid_gray_jitter), 
+    stacked_video_translation, blurred_frames, disps = SPOT_register.translation_register_blurry_phase_contrast_videos(np.uint8(255*vid_gray_jitter), 
                                                                                                   shape=(512,512), 
                                                                                                   sub_pix_res = 1, 
                                                                                                   impute_pixels = True, 
@@ -85,7 +85,8 @@ if __name__=="__main__":
                                                                                                   dog_sigma=3, 
                                                                                                   detect_blurred_frames = False, 
                                                                                                   blur_factor=3., 
-                                                                                                  apply_crop_mask=False)
+                                                                                                  apply_crop_mask=False,
+                                                                                                  return_crop=False)
                                             
     """
     visualize the registered movie
