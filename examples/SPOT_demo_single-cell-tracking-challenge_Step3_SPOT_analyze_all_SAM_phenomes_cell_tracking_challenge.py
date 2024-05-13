@@ -254,19 +254,19 @@ if __name__=="__main__":
     #   Use hcluster to discover modules.          
     # =============================================================================
         
-    clustermap, SAM_modules, SAM_modules_featurenames, SAM_modules_feature_indices = SAM.hierarchical_cluster_features_into_SAM_modules(all_feats, 
-                                                                                                           feature_names, 
-                                                                                                           feature_type=feature_type,
-                                                                                                           feature_scope=feature_scope,
-                                                                                                           hcluster_heatmap_color='vlag',
-                                                                                                           hcluster_method='average', 
-                                                                                                           hcluster_metric='euclidean',
-                                                                                                           lam_smooth=1e1, 
-                                                                                                           p_smooth=0.5, 
-                                                                                                           niter_smooth=10,
-                                                                                                           min_peak_distance=5,
-                                                                                                           debugviz=False)
-    
+    clustermap, SAM_modules, SAM_modules_ordered_colorbar, SAM_modules_featurenames, SAM_modules_feature_indices = SAM.hierarchical_cluster_features_into_SAM_modules(all_feats, 
+                                                                                                                       feature_names, 
+                                                                                                                       feature_type=feature_type,
+                                                                                                                       feature_scope=feature_scope,
+                                                                                                                       hcluster_heatmap_color='vlag',
+                                                                                                                       hcluster_method='average', 
+                                                                                                                       hcluster_metric='euclidean',
+                                                                                                                       lam_smooth=1e1, 
+                                                                                                                       p_smooth=0.5, 
+                                                                                                                       niter_smooth=10,
+                                                                                                                       min_peak_distance=5,
+                                                                                                                       debugviz=False,
+                                                                                                                       savefile=None) # if savefile is set, and debugviz = True, this will save the intermediate plots to the specified folder path.
     
     # =============================================================================
     #     Obtain the characteristic signature for each module 
@@ -591,10 +591,12 @@ if __name__=="__main__":
                                                                    all_unique_conditions = None)
                   
     """
-    HMM learning on the labeled trajectories 
+    HMM learning on the labeled trajectories,
+    
+    permute is the reordering of the hidden states to correspond with phenotype clusters. If using the methods associated with the fitted HMM model, then permute needs to be reapplied. 
     """
     # only one condition. 
-    all_HMM_models = SAM.fit_categoricalHMM_model_to_phenotype_cluster_label_trajectories( all_object_label_trajectories,
+    all_HMM_models, all_HMM_models_transmat_permute = SAM.fit_categoricalHMM_model_to_phenotype_cluster_label_trajectories( all_object_label_trajectories,
                                                                                           clust_labels,
                                                                                           hmm_algorithm = 'map', 
                                                                                           hmm_random_state = 0,
@@ -614,7 +616,7 @@ if __name__=="__main__":
                                   edgescale=10, 
                                   edgelabelpos=.5, 
                                   figsize=(15,15),
-                                  savefile=None)
+                                  savefile=None) # savefile should be specified in .svg format to get the same looking arrows. For some reason .pdf doesn't give this. 
     plt.show()
     
 
