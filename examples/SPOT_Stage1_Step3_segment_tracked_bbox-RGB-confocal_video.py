@@ -96,8 +96,8 @@ if __name__=="__main__":
     Perform segmentation, 
     """
     # setup some parameters
-    segment_thresh = .5
-    segment_min_I = .15 * 255 # do i need to set this lower? 
+    segment_thresh = .5 # 0-1, we can decrease this to segment more, or increase to get tighter segmentation. 
+    segment_min_I = .15 * 255 # for fluorescence, we can set this to exclude very low intensity organoids. 
 
 
     # define the savefolder
