@@ -39,6 +39,9 @@ if __name__=="__main__":
     
     """
     Detect bounding boxes using YOLOv3 model and write straight to the output folder. 
+    
+    This function will detect all the bounding boxes for each channel. vid of dimensions (n_frames x n_rows x n_cols x n_channels)
+    Results will be saved to outfolder, each channel with their own individual subfolder. 
     """
     detection.load_and_run_YOLOv3_weights_keras_detection_model_RGB(vid, 
                                                                     weightsfile,
