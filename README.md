@@ -30,7 +30,9 @@ SPOT is associated with the following paper, which you can read for more technic
 **Measuring and monitoring complex dynamic phenotypic heterogeneity in live-cell imaging using Shape, Appearance and Motion Phenotype Observation Tool (SPOT)**, 2023, written by Felix Y. Zhou, Brittany-Amber Jacobs, Xiaoyue Han, Adam Norton-Steele, Thomas M. Carroll, Carlos Ruiz Puig, Joseph Chadwick, Xiao Qin, Richard Lisle, Lewis Marsh, Helen M. Byrne, Heather A. Harrington, Linna Zhou and Xin Lu.
 
 ## Getting Started
-Exemplar scripts to run every step of the workflow are provided in the Examples folder which uses the example data located in the data/ folder. This includes:
+Detailed guide to setting up and installing SPOT, and running the exemplar scripts provided on example data is detailed in the [Getting Started word document]( https://github.com/fyz11/SPOT/blob/main/Getting%20Started%20with%20SPOT.docx) 
+
+Exemplar scripts to run every step of the workflow are provided in the Examples folder to work with the provided example data located in the data/ folder. This includes:
 
 **for SPOT Stage 1: video acquisition and object segmentation:**
 1. SPOT_Stage1_Step0_translation-register-RGB-confocal_video.py
