@@ -11,6 +11,13 @@ see README.md for details on usage.
     
 """
 
+def get_default_optical_flow_params():
+    
+    optical_flow_params = dict(pyr_scale=0.5, levels=5, winsize=15, iterations=5, poly_n=3, poly_sigma=1.2, flags=0)
+    
+    return optical_flow_params
+
+
 def Eval_dense_optic_flow(prev, present, params):
     r""" Computes the optical flow using Farnebacks Method
 

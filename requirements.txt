@@ -18,3 +18,4 @@ statsmodels
 umap-learn
 fastcluster
 imagecodecs
+dtaidistance

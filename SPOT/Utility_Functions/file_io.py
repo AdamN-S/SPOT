@@ -217,7 +217,7 @@ def read_video_cv2(avifile, to_RGB=True):
     return vid_array
 
 
-def fetch_channel_boxes(imgfile, boxfolder, ch_no, ending='.avi'):
+def fetch_channel_boxes(imgfile, boxfolder, ch_no, ending='.avi', subfolder=''):
     """
 
     Parameters
@@ -230,13 +230,15 @@ def fetch_channel_boxes(imgfile, boxfolder, ch_no, ending='.avi'):
         which of the channel number in the video of imgfile to load bounding boxes. first channel is 0, second is 1 etc. 
     ending : str
         file extension of the imgfile. defaults to '.avi'
+    subfolder : str
+        optionally specifies subfolder within the default os.path.join(boxfolder, basename)
 
     """
     import os 
     import glob 
     basename = os.path.split(imgfile)[-1].split(ending)[0]
     # print(basename)
-    bboxfolder = os.path.join(boxfolder, basename, 'Channel-%s' %(str(ch_no+1).zfill(2)))
+    bboxfolder = os.path.join(boxfolder, basename, subfolder, 'Channel-%s' %(str(ch_no+1).zfill(2)))
     # print(bboxfolder)
     boxfiles = glob.glob(os.path.join(bboxfolder, '*.txt'))
 

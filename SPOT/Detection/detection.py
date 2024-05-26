@@ -54,7 +54,7 @@ def _bbox_iou(box1, box2):
     w1, h1 = box1.xmax-box1.xmin, box1.ymax-box1.ymin
     w2, h2 = box2.xmax-box2.xmin, box2.ymax-box2.ymin
     
-    union = w1*h1 + w2*h2 - intersect
+    union = w1*h1 + w2*h2 - intersect + 1e-20 # small number to avoid division by zero
     
     return float(intersect) / union
 
