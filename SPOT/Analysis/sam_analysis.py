@@ -1913,11 +1913,11 @@ def construct_obj_traj_from_uniq_obj_ids(all_obj_uniq_row_ids,
     Parameters
     ----------
     all_obj_uniq_row_ids : list or array
-        list of unique object ids which needs to link into object trajectories 
+        list of unique object ids which needs to link into object trajectories, the last entry after splitting must be the frame number
     separator : str
         this is the character separator used to separate the meta information in the unique object id.
     wanted_entries : str
-        this is the index that corresponds to the entities uniq_filename, filename, organoid_no, frame_no after splitting a unique object id with the separator. 
+        this is the index that corresponds to the entities uniq_filename, filename, organoid_no after splitting a unique object id with the separator. 
     d_Frame : int 
         this is the expected number of frames between timepoints in the trajectory if timepoints are 'consecutive'. Thus if the data was not subsampled in time, the d_Frame=1 frame
     
@@ -1939,6 +1939,7 @@ def construct_obj_traj_from_uniq_obj_ids(all_obj_uniq_row_ids,
             
     """
     import numpy as np 
+    from tqdm import tqdm 
     # build given the organoid_ids, the temporal trajectory from the flattened data of each individual organoid. 
     # id separation given by '_' last one = TP!
     
@@ -1952,7 +1953,7 @@ def construct_obj_traj_from_uniq_obj_ids(all_obj_uniq_row_ids,
     all_obj_uniq_row_ids_next = np.zeros(len(all_obj_uniq_row_ids), dtype=np.int32) # this stores what we want. 
     all_obj_uniq_ids_uniq = np.unique(all_obj_uniq_ids)
     
-    for idd in all_obj_uniq_ids_uniq[:]:
+    for idd in tqdm(all_obj_uniq_ids_uniq[:]):
         
         select_index = np.arange(len(all_obj_uniq_ids))[all_obj_uniq_ids==idd]
         select_row_ids = all_obj_uniq_row_ids[select_index]
