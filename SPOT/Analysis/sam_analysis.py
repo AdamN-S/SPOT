@@ -2032,7 +2032,7 @@ def entropy_transition_matrix(trans_mat,
     trans_mat_copy = trans_mat.copy()
     if normalize_rows:
         trans_mat_copy = trans_mat_copy/(np.nansum(trans_mat, axis=1)[...,None]+1e-20)
-    trans_mat_entropy = np.hstack([spstats.entropy(tt) for tt in trans_mat_copy])
+    trans_mat_entropy = np.hstack([spstats.entropy(tt, nan_policy='omit') for tt in trans_mat_copy])
     
     return trans_mat_entropy
 
