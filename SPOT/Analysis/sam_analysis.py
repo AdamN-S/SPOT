@@ -2009,6 +2009,34 @@ def construct_obj_traj_from_uniq_obj_ids(all_obj_uniq_row_ids,
     return object_trajectories_dict
 
 
+def entropy_transition_matrix(trans_mat, 
+                              normalize_rows=True):
+    r""" Optionally row normalize an input transition matrix so that the sum of rows = 1. Then for each row, compute the shannon entropy. 
+
+    Parameters
+    ----------
+    trans_mat : 2D numpy array 
+        Transition table giving the probability of transition from row i to column j. Can be un-normalized.  
+    normalize_rows : bool
+        If set, this automatically normalizes the row transition probabilities prior to computing entropy 
+
+    Returns
+    -------
+    trans_mat_entropy : (n_states,) array
+        entropy of transition for each state of row i
+
+    """
+    import scipy.stats as spstats
+    import numpy as np 
+    
+    trans_mat_copy = trans_mat.copy()
+    if normalize_rows:
+        trans_mat_copy = trans_mat_copy/(np.nansum(trans_mat, axis=1)[...,None]+1e-20)
+    trans_mat_entropy = np.hstack([spstats.entropy(tt) for tt in trans_mat_copy])
+    
+    return trans_mat_entropy
+
+
 ### automatic drawing of the hmm graph with edges colored by probability. 
 def draw_HMM_transition_graph(trans_table, ax, node_colors=None, 
                               edgescale=10, edgelabelpos=1., 
