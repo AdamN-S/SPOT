@@ -34,7 +34,7 @@ Detailed guide to setting up and installing SPOT, and running the exemplar scrip
 
 Exemplar scripts to run every step of the workflow are provided in the Examples folder to work with the provided example data located in the data/ folder. This includes:
 
-**for SPOT Stage 1: video acquisition and object segmentation:**
+###for SPOT Stage 1: video acquisition and object segmentation:###
 1. SPOT_Stage1_Step0_translation-register-RGB-confocal_video.py
 2. SPOT_Stage1_Step0_unmix-RGB-confocal_video.py
 3. SPOT_Stage1_Step1_detect_bbox-RGB-confocal_video.py
@@ -42,18 +42,18 @@ Exemplar scripts to run every step of the workflow are provided in the Examples 
 5. SPOT_Stage1_Step3_segment_tracked_bbox-RGB-confocal_video.py
 6. SPOT_Stage1_Step4_postprocess_segment_tracked_bbox-RGB-confocal_video.py
 
-**for SPOT Stage 2: computation of SAM (Shape, Appearance and Motion) phenome:**
-*** based on the example fluorescent video ***
+###for SPOT Stage 2: computation of SAM (Shape, Appearance and Motion) phenome:###
+** based on the example fluorescent video **
 1. SPOT_Stage2_Step1_compute_SAM_phenomes.py
 2. SPOT_Stage2_Step2_generate_metadata_table.py
 3. SPOT_Stage2_Step3_compile_and_export_SAM_phenomes.py
 4. SPOT_Stage2_Step4_compile_and_export_object_patch_imgs.py
    
-*** based on the single cell tracking challeng ***
+** based on the single cell tracking challenge **
 1. SPOT_demo_single-cell-tracking-challenge_Step0_Prepare_Single_Cell_Tracking_Challenge_Dataset_All.py
 2. SPOT_demo_single-cell-tracking-challenge_Step1_Compute_SAM_phenome_Single_Cell_Tracking_Challenge_Dataset_All.py
 
-**for SPOT Stage 3: analysis of SAM (Shape, Appearance and Motion) phenome:**
+###for SPOT Stage 3: analysis of SAM (Shape, Appearance and Motion) phenome:###
 1. SPOT_demo_single-cell-tracking-challenge_Step2_Compile_All_SAM_phenomes_cell-tracking-challenge.py
 2. SPOT_demo_single-cell-tracking-challenge_Step3_SPOT_analyze_all_SAM_phenomes_cell_tracking_challenge.py
 
