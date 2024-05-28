@@ -43,6 +43,7 @@ Exemplar scripts to run every step of the workflow are provided in the Examples 
 6. SPOT_Stage1_Step4_postprocess_segment_tracked_bbox-RGB-confocal_video.py
 
 **for SPOT Stage 2: computation of SAM (Shape, Appearance and Motion) phenome:**    
+
 <u>based on the example fluorescent video:</u>
 1. SPOT_Stage2_Step1_compute_SAM_phenomes.py
 2. SPOT_Stage2_Step2_generate_metadata_table.py
