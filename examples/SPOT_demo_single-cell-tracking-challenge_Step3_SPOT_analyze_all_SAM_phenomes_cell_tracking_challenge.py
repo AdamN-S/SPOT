@@ -609,7 +609,6 @@ if __name__=="__main__":
     """
     visualize the transition matrix
     """
-    fig, ax = plt.subplots(figsize=(10,10))
     SAM.draw_HMM_transition_graph(transition_matrix, 
                                   ax=ax, 
                                   node_colors=clust_labels_colors, 
