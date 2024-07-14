@@ -154,7 +154,7 @@ def remove_high_variance_features(all_feats, feature_names, variance_threshold_s
         return all_feats_corrected, feature_names_corrected
 
 
-def select_time_varying_features(all_feats, feature_names, all_time, ridge_alpha=1., norm_time=True):
+def select_time_varying_features(all_feats, feature_names, all_time, ridge_alpha=1., norm_time=True, cutoff_method='mean', offset_threshold=None):
     
     r""" Selects features that are most strongly correlated with time using linear ridge regression. Features are kept if the absolute value of their regression coefficient is greater than the mean across all features
     
@@ -170,6 +170,10 @@ def select_time_varying_features(all_feats, feature_names, all_time, ridge_alpha
         Constant that multiplies the L2 term, controlling regularization strength. alpha must be a non-negative float i.e. in [0, inf).
     norm_true : bool
         if True, assumes time is given as frame number and performs (all_time-1.)/(np.max(all_time-1.)) to rescale to 0-1 float
+    cutoff_method : str
+        one of 'mean' or 'median' for computing the coeff cutoff threshold
+    offset_threshold : float
+        optional modification of the inferred cutoff: cutoff_new = cutoff + offset_threshold * np.std( coeffs )
                                                                                                                                
     Returns
     -------
@@ -195,8 +199,17 @@ def select_time_varying_features(all_feats, feature_names, all_time, ridge_alpha
         
     reg.fit(all_feats, all_time_score)
     coeffs = reg.coef_.copy()
-    coef_thresh = np.mean(np.abs(coeffs)) # thresh by the mean 
+
+    if cutoff_method=='mean':
+        coef_thresh = np.mean(np.abs(coeffs)) # thresh by the mean 
+    elif cutoff_method == 'median':
+        coef_thresh = np.median(np.abs(coeffs)) # thresh by the mean 
+    else:
+        coef_thresh = np.mean(np.abs(coeffs)) # thresh by the mean 
     
+    if offset_threshold is not None:
+        coef_thresh = coef_thresh + offset_threshold*np.std(np.abs(coeffs))
+
     keep_feats = np.abs(reg.coef_)>=coef_thresh # create a binary indicator 
     
     feature_names_corrected = feature_names[keep_feats].copy()

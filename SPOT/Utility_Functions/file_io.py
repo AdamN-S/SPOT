@@ -1085,8 +1085,10 @@ def load_SPOT_features_files(analysisfolders,
         """
         # drop incomplete rows.
         """        
-        keep_rows = np.arange(len(merge_table))[~np.isnan(merge_table['area'].values)] # any other valid perimeter. 
-        
+        # keep_rows = np.arange(len(merge_table))[~np.isnan(merge_table['area'].values)] # any other valid perimeter. 
+        count_nans = (merge_table.isna().values).sum(axis=1)
+        keep_rows = np.arange(len(merge_table))[count_nans==0]
+
         merge_table = merge_table.loc[keep_rows]
         merge_table.index = np.arange(len(merge_table))
         
