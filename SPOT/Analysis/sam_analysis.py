@@ -231,11 +231,11 @@ def hierarchical_cluster_features_into_SAM_modules(all_feats,
     SAM_colors = pd.Series(feature_type, index=df.columns).map(SAM_lut)
     spatial_colors = pd.Series(feature_scope, index=df.columns).map(spatial_lut)
 
-    
-    # t1 = time.time()
+
     df_corr = pd.DataFrame(1.-pairwise_distances(all_feats.T, metric='correlation', n_jobs=-1),
                            index = feature_names,
                            columns = feature_names)
+    df_corr = df_corr.fillna(value=0) # in case any potential entries evaluated to nan 
     # t2 = time.time()
     # print('finished correlation', t2-t1)
     
