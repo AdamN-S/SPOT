@@ -838,7 +838,8 @@ def load_SPOT_features_files(analysisfolders,
                              shapefeatsfile_suffix='_shape_features_timelapse.csv',
                              appearfeatsfile_suffix='_image_features_timelapse.csv', 
                              motionfeatsfile_suffix='_motion_features_timelapse.csv',
-                             read_chunksize=2000):
+                             read_chunksize=2000,
+                             test_feature_name='mean_speed_global_flow'):
     
     r""" Compiles the output of SPOT with a .csv of shape, appearance and motion features table and dictionary-like .mat or .pkl of object crops and object boundaries into one dictionary of metainformation and merged features table. 
     Takes into account if you only have one or two of shape, appearance or motion features computed, instead of the full set. 
@@ -867,6 +868,8 @@ def load_SPOT_features_files(analysisfolders,
         this is the second half of the compiled motion features table after the expt prefix part. Format is .csv. Optionally specified. Set as None if not using. 
     read_chunksize : int
         the number of entries in the tables to read at once, this makes the pandas table reading more memory-efficient and faster.
+    test_feature_name : str
+        the name of the feature to use to test whether to keep an object instance. This feature should be computable and well-defined for every valid organoid instance. Default is 'mean_speed_global_flow'
 
     Returns
     -------
@@ -1086,8 +1089,9 @@ def load_SPOT_features_files(analysisfolders,
         # drop incomplete rows.
         """        
         # keep_rows = np.arange(len(merge_table))[~np.isnan(merge_table['area'].values)] # any other valid perimeter. 
-        count_nans = (merge_table.isna().values).sum(axis=1)
-        keep_rows = np.arange(len(merge_table))[count_nans==0]
+        # count_nans = (merge_table.isna().values).sum(axis=1)
+        # keep_rows = np.arange(len(merge_table))[count_nans==0]
+        keep_rows = np.arange(len(merge_table))[~np.isnan(merge_table[test_feature_name].values)] # any other valid perimeter.  # this finds more? 
 
         merge_table = merge_table.loc[keep_rows]
         merge_table.index = np.arange(len(merge_table))
