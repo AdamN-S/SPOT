@@ -69,8 +69,8 @@ In parallel to the scripts, we provide an alpha version of a GUI to run SPOT cal
 ## Pretrained Neural Network Models for organoid detection and segmentation
 We make available pretrained neural network organoid detection and segmentation models with this repo. The segmentation model is already provided in the repo. The detection model should be downloaded and copied to the models/detect_CNN_model/ folder of this repo if you are running the example scripts.
 
-1. Organoid attention UNet segmentation model given a bounding box cropped image (this repo, [models/segment_CNN_model/organoid-bbox_attn_seg-unet-master-v2_64x64-8feats_v2.h5](https://github.com/fyz11/SPOT/blob/main/models/segment_CNN_model/organoid-bbox_attn_seg-unet-master-v2_64x64-8feats_v2.h5)) 
-2. [Organoid YOLOv3 bounding box detection model weights](https://www.dropbox.com/scl/fi/qzowc9s9n30zh6qdyzeqw/keras_YOLOv3_organoid_detector2.h5?rlkey=6deiqemsmcz3yin9b5dnz0e6y&dl=0)
+1. Organoid bounding box detector for brightfield/phase contrast and fluorescence microscopy. [Organoid YOLOv3 bounding box detection model weights](https://www.dropbox.com/scl/fi/qzowc9s9n30zh6qdyzeqw/keras_YOLOv3_organoid_detector2.h5?rlkey=6deiqemsmcz3yin9b5dnz0e6y&dl=0)
+2. Organoid attention UNet segmentation model given a bounding box cropped image. (this repo, [models/segment_CNN_model/organoid-bbox_attn_seg-unet-master-v2_64x64-8feats_v2.h5](https://github.com/fyz11/SPOT/blob/main/models/segment_CNN_model/organoid-bbox_attn_seg-unet-master-v2_64x64-8feats_v2.h5)) 
 
 ## Documentation
 Documented API of the functions provided in this library is available as a html in the docs/build/hmtl folder. You can build up-to-date docs by going into docs/ and executing:
