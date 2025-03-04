@@ -15,7 +15,7 @@ Three innovations drive SPOT for temporal image analysis:
 SPOT is provided here as a Python package to allow full flexibility. To get started, please check out exemplar scripts in the examples/ folder. We also include SPOTapp, a graphical user interface (GUI) to run SPOT stages 1 and 2. This app is currently in alpha development and is provided here as-is to support the paper publication. 
 
 <p align="center">
-  <img src="https://github.com/fyz11/SPOT/blob/main/docs/pictures/SAM_motivation.jpg" width=100%/>
+  <img src="https://github.com/fyz11/SPOT/blob/main/docs/pictures/SAM_motivation2.jpg" width=100%/>
 </p>
 
 ## Introduction to the SAM phenome
@@ -25,9 +25,12 @@ This led us to design a single generalized SAM feature set which can function si
 
 
 ## Associated Paper
-SPOT is associated with the following paper, which you can read for more technical detail and get an idea of the many applications SPOT enables: 
+SPOT is associated with the following papers (which are currently under journal revision), which you will be able to read after publication for more technical detail and get an idea of the many applications SPOT enables: 
 
-**Measuring and monitoring complex dynamic phenotypic heterogeneity in live-cell imaging using Shape, Appearance and Motion Phenotype Observation Tool (SPOT)**, 2023, written by Felix Y. Zhou, Brittany-Amber Jacobs, Xiaoyue Han, Adam Norton-Steele, Thomas M. Carroll, Carlos Ruiz Puig, Joseph Chadwick, Xiao Qin, Richard Lisle, Lewis Marsh, Helen M. Byrne, Heather A. Harrington, Linna Zhou and Xin Lu.
+1. (Methods paper, 2D fixed and live-cell imaging application) **Development of a universal imaging “phenome” using Shape, Appearance and Motion (SAM) features and the SAM Observation Tool (SPOT)**, (2025), written by Felix Y. Zhou, Adam Norton-Steele, Lewis Marsh, Helen M. Byrne, Heather A. Harrington and Xin Lu.
+
+2. (3D Organoid Timelapse Application) **Identifying phenotype-genotype-function coupling in 3D organoid imaging using 
+2 Shape, Appearance and Motion Phenotype Observation Tool (SPOT)**, 2025, written by Felix Y. Zhou, Brittany-Amber Jacobs, Adam Norton-Steele, Xiaoyue Han, Thomas M. Carroll, Carlos Ruiz Puig, Joseph Chadwick, Xiao Qin, Richard Lisle, Lewis Marsh, Helen M. Byrne, Heather A. Harrington, Linna Zhou and Xin Lu.
 
 ## Getting Started
 Detailed guide to setting up and installing SPOT, and running the exemplar scripts provided on example data is detailed in the [Getting Started word document]( https://github.com/fyz11/SPOT/blob/main/Getting%20Started%20with%20SPOT.docx) 
@@ -76,9 +79,13 @@ make html
 ```
 
 ## To install
-The package can be installed automatically using pip. It has been tested for Python >=3.8. Installation time in mins :
+The package can be installed automatically using pip after cloning the repository. It has been tested for Python >=3.8. Installation time in mins :
 ```shell
 pip install .
+```
+You can also install directly from the github without cloning, but will still need to manually download the pretrained model weights:
+```shell
+pip install SPOT@git+https://github.com/fyz11/SPOT.git
 ```
 
 ### COPYRIGHT INFORMATION:
