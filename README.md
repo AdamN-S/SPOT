@@ -15,8 +15,8 @@
    * [Documentation](#documentation)
    * [To install](#to-install)
    * [COPYRIGHT INFORMATION:](#copyright-information)
-         + [FOR ACADEMIC AND NON-PROFIT USERS](#for-academic-and-non-profit-users)
-         + [FOR-PROFIT USERS](#for-profit-users)
+        + [FOR ACADEMIC AND NON-PROFIT USERS](#for-academic-and-non-profit-users)
+        + [FOR-PROFIT USERS](#for-profit-users)
 
 <!-- TOC end -->
 
