@@ -8,6 +8,7 @@
 
    * [Introduction to SPOT](#introduction-to-spot)
    * [Introduction to the SAM phenome](#introduction-to-the-sam-phenome)
+        + [Code snippet to compute phenome](#code-snippet-to-compute-phenome)
    * [Associated Paper](#associated-paper)
    * [Getting Started](#getting-started)
    * [SPOTapp](#spotapp)
@@ -39,8 +40,10 @@ SPOT is provided here as a Python package to allow full flexibility. To get star
 ## Introduction to the SAM phenome
 Dynamic objects constantly change their behaviour. Motivated by observation of natural images like birds and cars, we hypothesize that three measurable properties; Shape, Appearance and Motion (SAM) provides complementary information necessary to characterize the instantaneous phenotypic state for any object.  
 
-This led us to design a single generalized SAM feature set which can function similar to the single-cell transcriptome in single-cell sequencing analysis by considering in addition to shape, appearance and motion; global, (local) regional and (local) distribution features.
+This led us to design a single generalized SAM feature set (depicted above) which can function similar to the single-cell transcriptome in single-cell sequencing analysis by considering in addition to shape, appearance and motion; global, (local) regional and (local) distribution features.
 
+<!-- TOC --><a name="code-snippet-to-compute-phenome"></a>
+### Code snippet to compute phenome
 
 <!-- TOC --><a name="associated-paper"></a>
 ## Associated Paper
