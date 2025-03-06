@@ -44,6 +44,41 @@ This led us to design a single generalized SAM feature set (depicted above) whic
 
 <!-- TOC --><a name="code-snippet-to-compute-phenome"></a>
 ### Code snippet to compute phenome
+The SPOT library computes the shape, appearance and motion-associated features in the SAM phenome separately to allow separate usage. To compute, you need to have the video as an array (`vid`) of (n_frames, n_rows, n_columns) and tracked and segmented object boundaries given as an array (`boundaries`) of (n_objects, n_frames, n_contour_points, 2). The last dimension of the boundaries array specifies (y,x) image coordinate convention. The boundaries array should use `numpy.nan` for any timepoints where an object was not present. You also need to specify the pixel resolution in micrometers (`pixel_res`) and the time elapsed (`time_res`) between each video frame in hours
+
+#### Computing Shape Phenome
+```
+import SPOT.Features.features as SPOT_SAM_features
+
+metrics, metrics_labels, metrics_norm_bool = SPOT_SAM_features.compute_boundary_morphology_features(boundaries, 
+                                                                                                    imshape,  
+                                                                                                    pixel_xy_res = pixel_res)
+```
+#### Computing Appearance Phenome
+```
+import SPOT.Features.features as SPOT_SAM_features
+
+metrics, metrics_labels, metrics_norm_bool = SPOT_SAM_features.compute_boundary_texture_features(vid, 
+                                                                                                  boundaries)
+```
+#### Computing Motion Phenome
+```
+import SPOT.Features.features as SPOT_SAM_features
+import SPOT.Tracking.optical_flow as SPOT_optical_flow
+import skimage.exposure as skexposure
+
+# compute optical flow first.
+optical_flow_params = dict(pyr_scale=0.5, levels=5, winsize=15, iterations=5, poly_n=3, poly_sigma=1.2, flags=0)
+
+vid_norm = np.array([skexposure.rescale_intensity(frame) for frame in vid])
+flow = SPOT_optical_flow.extract_vid_optflow(vid_norm, 
+                                             flow_params=optical_flow_params,
+                                             rescale_intensity=True)
+
+# then compute motion features. As the flow does not account for the last frame of the video, motion features also miss the last frame object instances.
+metrics, metrics_labels, metrics_norm_bool = SPOT_SAM_features.compute_boundary_motion_features(flow 
+                                                                                                boundaries)
+```
 
 <!-- TOC --><a name="associated-paper"></a>
 ## Associated Paper
