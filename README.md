@@ -1,6 +1,11 @@
+# SPOT (Shape, appearance, motion Phenotype Observation Tool)
+
+<p align="center">
+  <img src="https://github.com/fyz11/SPOT/blob/main/docs/pictures/main_workflow.jpg" width=100%/>
+</p>
+
 <!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
 
-- [SPOT (Shape, appearance, motion Phenotype Observation Tool)](#spot-shape-appearance-motion-phenotype-observation-tool)
    * [Introduction to SPOT](#introduction-to-spot)
    * [Introduction to the SAM phenome](#introduction-to-the-sam-phenome)
    * [Associated Paper](#associated-paper)
@@ -9,18 +14,11 @@
    * [Pretrained Neural Network Models for organoid detection and segmentation](#pretrained-neural-network-models-for-organoid-detection-and-segmentation)
    * [Documentation](#documentation)
    * [To install](#to-install)
-      + [COPYRIGHT INFORMATION:](#copyright-information)
-         - [FOR ACADEMIC AND NON-PROFIT USERS](#for-academic-and-non-profit-users)
-         - [FOR-PROFIT USERS](#for-profit-users)
+   * [COPYRIGHT INFORMATION:](#copyright-information)
+         + [FOR ACADEMIC AND NON-PROFIT USERS](#for-academic-and-non-profit-users)
+         + [FOR-PROFIT USERS](#for-profit-users)
 
 <!-- TOC end -->
-
-<!-- TOC --><a name="spot-shape-appearance-motion-phenotype-observation-tool"></a>
-# SPOT (Shape, appearance, motion Phenotype Observation Tool)
-
-<p align="center">
-  <img src="https://github.com/fyz11/SPOT/blob/main/docs/pictures/main_workflow.jpg" width=100%/>
-</p>
 
 <!-- TOC --><a name="introduction-to-spot"></a>
 ## Introduction to SPOT
