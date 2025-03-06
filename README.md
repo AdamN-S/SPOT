@@ -62,6 +62,7 @@ metrics, metrics_labels, metrics_norm_bool = SPOT_SAM_features.compute_boundary_
                                                                                                   boundaries)
 ```
 #### Computing Motion Phenome
+Unlike shape and appearance, motion needs to first compute the dense optical flow. Consequently motion features are not available for object instances in the last video frame. 
 ```
 import SPOT.Features.features as SPOT_SAM_features
 import SPOT.Tracking.optical_flow as SPOT_optical_flow
