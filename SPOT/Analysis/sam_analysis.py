@@ -1339,6 +1339,143 @@ def compute_phenotypic_trajectory(lower_dimension_pts_2D,
     return all_trajectories, all_density_contours
 
 
+def compute_phenotypic_trajectory_3d(lower_dimension_pts_3D, 
+                                    objects_time, 
+                                    time_intervals,
+                                    all_conditions=None, 
+                                    unique_conditions=None,
+                                    cmap='coolwarm',
+                                    grid_scale_factor=500, 
+                                    sigma_factor=0.25, 
+                                    thresh_density_sigma = 3,
+                                    debugviz=False):
+
+    r""" Given the 3D phenomic landscape, construct the phenomic trajectory for each given condition and the given temporal sampling regime. 
+    
+    Parameters
+    ----------
+    lower_dimension_pts_3D : (N_objects, 3) array 
+        dimensional reduced coordinates of SPOT SAM features in 3D. 
+    objects_time : (N_objects,) array 
+        the timepoint each object instance was obtained from 
+    time_intervals : lenght (n_time_intervals+1,) list or array 
+        the global time interval sampling, the density of objects mapping to the phenomic landscape within each interval will be used to construct the 'majority' phenomic coordinate to represent the phenotypic diversity in that interval.
+    all_conditions : (N_objects,) array 
+        the condition of each object instance. If not specified, all object instances are assumed to come from a single condition - 'na' class
+    unique_conditions : list or array
+        the unique conditions in the experiment. If not specified, the unique conditions will be obtained by np.unique(all_conditions) 
+    cmap : str
+        the color to show the point density if debugviz=True
+    grid_scale_factor : int 
+        the image size to compute the point density via image means. The larger the size, the finer the higher the resolution but slower the computation as filtering will take longer.  
+    sigma_factor : float
+        the scale correction factor for estimating the bandwidth of the smoothing gaussian filter. The sigma = sigma_factor * mean(pairwise_distances of points per condition per time interval)
+    thresh_density_sigma : float  
+        the density heatmap of points will be thresholded by mean(density) + thresh_density_sigma * std(density). The higher the threshold, the more the 'majority' coordinate reflects the average of the summation of phenotypes across the densest parts of the phenomic landscape       
+    debugviz : bool
+        if True, plot the image of density heatmap and computed 'majority' phenomic coordinate per time interval. 
+        
+    Returns
+    -------
+    all_trajectories : (n_conditions, n_time_intervals, 3) array
+        The per condition 3D phenotype trajectory in phenomic landscape coordinates. 
+    all_density_contours : list
+        if debugviz=True, for each condition this will record the contour of the heatmap at thresholds of mean(density) + 1 * std(density), mean(density) + 2 * std(density), and mean(density) + 3 * std(density) for each time interval bin
+    
+    """
+    import numpy as np 
+    import pylab as plt 
+    from sklearn.metrics import pairwise_distances
+    import skimage.filters as skfilters
+    from skimage.measure import find_contours
+    
+    # convert the points to images to estimate the point densities. 
+    # pad = 1
+    min_pt = np.min(lower_dimension_pts_3D, axis=0) - 1
+    max_pt = np.max(lower_dimension_pts_3D, axis=0) + 1
+    
+    uu_tform = (lower_dimension_pts_3D - min_pt) / (max_pt - min_pt) * grid_scale_factor
+    
+    grid_pts_image = np.zeros((grid_scale_factor+1, grid_scale_factor+1, grid_scale_factor+1), dtype=np.float32)
+    
+    
+    if all_conditions is None:
+        all_conditions = ['na']
+        
+    if unique_conditions is None:
+        unique_conditions = np.unique(all_conditions)
+    
+    
+    all_trajectories = []
+    all_density_contours = []
+    
+    
+    # iterate over unique conditions. 
+    for cond_ii, cond in enumerate(unique_conditions):
+
+        traj_cond_time = []
+        contour_cond_time = []
+        
+        select_cond = np.hstack(all_conditions) == cond
+        
+        # iterate over each time interval 
+        for day_bin_ii in np.arange(len(time_intervals)-1)[:]:
+    
+            select_day = np.logical_and(objects_time>=time_intervals[day_bin_ii], 
+                                        objects_time<=time_intervals[day_bin_ii+1])
+            select = np.logical_and(select_cond, select_day) # joint data selector of condition and time interval 
+            
+            """
+            some of these were not filmed long enough!.
+            """
+            """
+            some of these were not filmed long enough!.
+            """
+            if np.sum(select) == 0: 
+                traj_cond_time.append(np.hstack([np.nan, np.nan, np.nan]))
+                contour_cond_time.append([])
+            else:
+                xyz = uu_tform[select].astype(np.int32)
+                sigma = sigma_factor * np.nanmean(pairwise_distances(uu_tform[select]))
+                grid_pts_xyz = np.zeros_like(grid_pts_image, dtype=np.float32)
+                np.add.at(grid_pts_xyz, (xyz[:,0], xyz[:,1], xyz[:,2]), 1)
+                grid_pts_xyz = skfilters.gaussian(grid_pts_xyz, sigma=sigma, mode='reflect', preserve_range=True)
+                
+                level1mask = grid_pts_xyz >= np.mean(grid_pts_xyz) + thresh_density_sigma * np.std(grid_pts_xyz)
+                print(level1mask)
+                grid_pt_mean = np.mean(np.array(np.where(level1mask)).T, axis=0)
+                print(grid_pt_mean) 
+                traj_cond_time.append(grid_pt_mean)
+                
+                contour_cond_time_levels = []
+                    
+                if debugviz: 
+                    fig = plt.figure()
+                    ax = fig.add_subplot(111, projection='3d')
+                    ax.scatter(xyz[:, 0], xyz[:, 1], xyz[:, 2], c='lightgrey')
+                    ax.scatter(grid_pt_mean[0], grid_pt_mean[1], grid_pt_mean[2], c='r')
+                    
+                    for level in [1, 2, 3]:
+                        contour_0 = find_contours(grid_pts_xyz, np.mean(grid_pts_xyz) + level * np.std(grid_pts_xyz))
+                        contour_cond_time_levels.append(contour_0)
+                        for cnt in contour_0:
+                            ax.plot(cnt[:, 0], cnt[:, 1], cnt[:, 2], color='k', zorder=100, alpha=1, lw=3)
+                    plt.show()
+                    
+                print(contour_cond_time_levels)    
+                contour_cond_time.append(contour_cond_time_levels)
+            
+        all_density_contours.append(contour_cond_time)
+        all_trajectories.append(traj_cond_time)
+        
+    all_trajectories = np.array(all_trajectories) # this is regular. 
+    
+    # rescale back into the actual coordinate space
+    all_trajectories = all_trajectories / grid_scale_factor *  (max_pt - min_pt)  + min_pt 
+    
+    return all_trajectories, all_density_contours
+
+
 def construct_affinity_matrix_phenotypic_trajectory(trajectories_condition,
                                                     affinity='dtw',
                                                     use_std_denom=True):
